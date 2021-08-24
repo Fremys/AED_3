@@ -8,8 +8,13 @@ import java.io.ByteArrayInputStream;
 import java.io.DataOutputStream;
 import java.io.DataInputStream;
 
+import java.io.FileOutputStream;
+import java.io.FileInputStream;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import java.text.DateFormat;
 
 //classe dos relatorios
 
@@ -28,21 +33,27 @@ public class Relatorio{
 
     //construtores
 
-    public Relatorio(int id, int cpf, String nome, String dataNascimento, boolean sexo, String anotation)
-    {
-        this.cpf = cpf;
+    public Relatorio(int cpf, String nome, String dataNascimento, boolean sexo, String anotation){
+        this.Cpf = cpf;
         this.nome = nome;
-        this.dataNascimento = formato.parse(dataNascimento);
+
+        //tratamento de erro obrigatorio
+        try{
+            this.dataNascimento = formato.parse(dataNascimento);
+        }catch (Exception e){
+            this.dataNascimento = null;
+        }
+
         this.sexo = sexo;
         this.anotation = anotation;
     }
 
     public Relatorio(){
 
-        this.cpf = -1;
+        this.Cpf = -1;
         this.nome = "";
-        this.dataNascimento = formato.parse("00/00/0000");
-        this.sexo = False;
+        this.dataNascimento = null;
+        this.sexo = false;
         this.anotation = "";
     }
     
@@ -52,13 +63,44 @@ public class Relatorio{
         return this.Cpf;
     }
 
+    public String getNome(){
+        return this.nome;
+    }
+
+    public Date getDataNascimento(){
+        return this.dataNascimento;
+    }
+
+    public boolean getSexo(){
+        return this.sexo;
+    }
+
+    public String getAnotation(){
+        return this.anotation;
+    }
+
     //Metodo toString
 
     public String toString(){
+        
+        //tartar sexo
+        String sexoSRT = "";
+        if(this.sexo == true)
+        {
+            sexoSRT = "Masculino";
+        }
+        else if(this.sexo == false){
+            sexoSRT = "Feminino";
+        }
 
-        return "Relatorio [ CPF=" + this.cpf +
-         ", nome=" + this.nome + ", dataNascimento=" + this.dataNascimento +
-          ", sexo=" + this.sexo", anotation"+ this.anotation" ]"
+        //tratar data
+
+        return "==== RELATORIO ===\n" + 
+         "\nCPF: " + this.Cpf +
+         "\nNome: " + this.nome + 
+         "\nData de Nascimento: " + formato.format(this.dataNascimento) +
+          "\nSexo: " + sexoSRT +
+           "\nAnotação: "+ this.anotation + "\n";
     }
 
     /*
@@ -77,10 +119,10 @@ public class Relatorio{
         
         //definir variavrel que conversao de data para milisegundos
 
-        long time = format.getMillis();
+        long time = this.dataNascimento.getTime();
         //escrever dados no array de bytes
 
-        dos.writeInt(this.cpf);
+        dos.writeInt(this.Cpf);
         dos.writeUTF(this.nome);
         dos.writeLong(time);
         dos.writeBoolean(this.sexo);
@@ -96,21 +138,21 @@ public class Relatorio{
         
     */
     
-    public boolean frontByteArray(byte[] data) throws IOException {
+    public void frontByteArray(byte[] data) throws IOException {
 
         //criar vetor que armazena bytes
 
-        ByteArrayInputStream bais = new ByteArrayInputStrea(data);
+        ByteArrayInputStream bais = new ByteArrayInputStream(data);
 
         //definir conversor de bytes em dados primitivos;
         DataInputStream dis = new DataInputStream(bais);
 
 
-        this.cpf = dis.readInt();
+        this.Cpf = dis.readInt();
         this.nome = dis.readUTF();
         this.dataNascimento = new Date(dis.readLong());
         this.sexo = dis.readBoolean();
-        this.anotation = ;
+        this.anotation = dis.readUTF();
     }
 
 }
