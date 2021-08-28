@@ -11,6 +11,8 @@ import java.io.DataInputStream;
 import java.io.FileOutputStream;
 import java.io.FileInputStream;
 
+import java.io.RandomAccessFile;
+
 import java.util.Scanner;
 
 
@@ -28,6 +30,9 @@ public class Models{
     //definir auxiliar variável para escrita
     static DataOutputStream dos;
 
+    //definir variável para escrita aleatória de dados
+    static RandomAccessFile arq;
+
     //definir variável para leitura
     static FileInputStream fis;
     //definir auxiliar variável para escrita
@@ -35,49 +40,95 @@ public class Models{
 
     //Definir Array Auxiliar
     static byte[] bytes;
+    static byte[] bytesLixo;
+    
 
 
 
     //Metodo de inserção de relatórios em arquivo
     public static boolean insertRelatorio(int cpf, String nome, String dataNascimento, boolean sexo, String anotation){
-        
-        try {       
-            //criar uma nova classe de Relatório
+        //deifnir tamanho
 
+        int tamanhoPadrao = 600;
+        int idUltimo = 0;
+
+        try{       
+            //criar uma nova classe de Relatório
+            
             Relatorio relatorio = new Relatorio(cpf, nome, dataNascimento, sexo, anotation);
 
             //definir variável para escrita
-            fos = new FileOutputStream("./lelatorios.db");
+            fis = new FileInputStream("./Relatorios.db");
 
             //definir variável auxiliar para escrita
-            dos = new DataOutputStream(fos);
+            
+            dis = new DataInputStream(fis);
 
+            
             //metodo get para conferir se existe um registro com o ultimo id salvo
             
-            //Metodo ===================
-            //Metodo ===================
-
-            //Salvar a classe em um array dinâmico
-
-            bytes = relatorio.toByteArray();
-
-            //Salvar na variável o tamanho do array
-
-            int tamanho = bytes.length;
-
-            //============= ESCRITA ======================
-
-            //Escrever tamanho do registro
-
-            dos.writeInt(bytes.length);
-            dos.write(bytes);
+            idUltimo = dis.readInt();
 
             //fechar arquivo
+            fis.close();
 
-            fos.close();
+            //============= DEFINÇOES ===================
+            
+            //definir variável para escrita aleatoria
+            arq = new RandomAccessFile("./Relatorios.db", "rw");
 
+            // // //definir o nome do arquivo que ira ser escrito
+            // fos = new FileOutputStream("./Relatorios.db");
+
+            // // //definir variável auxiliar para escrita
+            // dos = new DataOutputStream(fos);
+
+            //============ FIM DAS DEFINIÇÕES ==============
+
+            //salvar enderço inicial do arquivo
+            long p1 = arq.getFilePointer();
+            
+            arq.writeInt(idUltimo);
+            
+
+            //Salvar a classe em um array dinâmico
+            bytes = relatorio.toByteArray();
+            
+            //Salvar na variável o tamanho do array
+            int tamanho = bytes.length;
+
+            //def
+            
+            //============= ESCRITA ======================
+            
+            //Escrever tamanho do registro
+            
+            arq.writeInt(tamanhoPadrao);
+            arq.write(bytes);
+            
+            //inserir lixo até completar o tamanho padrão
+            
+            if(tamanho < tamanhoPadrao)
+            {
+                //definir lixo
+                bytesLixo = new byte[((tamanhoPadrao - tamanho) - 1)];
+                arq.write(bytesLixo);
+            }
+            
+            //voltar com o ponteiro para o começo do arquivo
+            arq.seek(p1);
+
+            //escrever non começo do arqyuivo o ultimo id escrito
+            arq.writeInt((idUltimo + 1));
+            // fos.flush();
+
+            arq.seek(p1);
+            //fechar arquivo
+            arq.close();
+            
             return true;
         }catch (Exception e){
+            e.printStackTrace();
             return false;
         }
 
@@ -87,19 +138,20 @@ public class Models{
     public static Relatorio getRelatorio(int cpf){
 
         try{
-
             //criar uma nova classe de Relatório
 
             Relatorio relatorio = new Relatorio();
 
             //definir variável para escrita
-            fis = new FileInputStream("./lelatorios.db");
+
+            fis = new FileInputStream("./Relatorios.db");
 
             //definir variável auxiliar para escrita
+
             dis = new DataInputStream(fis);
 
             //pular um numero inteiro no ponteiro
-            //int tmp = dis.readInt();
+            int tmp = dis.readInt();
 
             //definr variavel de encontro
             boolean encontrou = false;
@@ -123,6 +175,10 @@ public class Models{
 
                 relatorio.frontByteArray(bytes);
 
+                //mostrar
+
+                System.out.println(relatorio.toString())11;
+
                 //verificar busca
 
                 if(cpf == relatorio.getCpf()){
@@ -141,6 +197,7 @@ public class Models{
 
 
         }catch (Exception e){
+            e.printStackTrace();
             return null;
         }
     }

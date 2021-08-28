@@ -94,7 +94,7 @@ public class Relatorio{
         }
 
         //tratar data
-
+        
         return "==== RELATORIO ===\n" + 
          "\nCPF: " + this.Cpf +
          "\nNome: " + this.nome + 
