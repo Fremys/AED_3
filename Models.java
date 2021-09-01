@@ -41,63 +41,65 @@ public class Models{
     //Definir Array Auxiliar
     static byte[] bytes;
     static byte[] bytesLixo;
-    
-
 
 
     //Metodo de inserção de relatórios em arquivo
     public static boolean insertRelatorio(int cpf, String nome, String dataNascimento, boolean sexo, String anotation){
+        
         //deifnir tamanho
-
         int tamanhoPadrao = 600;
         int idUltimo = 0;
+        boolean existeIdInicial = false;
 
         try{       
             //criar uma nova classe de Relatório
             
             Relatorio relatorio = new Relatorio(cpf, nome, dataNascimento, sexo, anotation);
-
-            //definir variável para escrita
-            fis = new FileInputStream("./Relatorios.db");
-
-            //definir variável auxiliar para escrita
             
-            dis = new DataInputStream(fis);
-
-            
-            //metodo get para conferir se existe um registro com o ultimo id salvo
-            
-            idUltimo = dis.readInt();
-
+            //definir variável para escrita aleatoria
+            arq = new RandomAccessFile("./Relatorios.db", "rw");
             //fechar arquivo
-            fis.close();
+            arq.close();
+            
+            try{
+                //definir variável para escrita
+                fis = new FileInputStream("./Relatorios.db");
+    
+                //definir variável auxiliar para escrita
+                dis = new DataInputStream(fis);
+
+                //metodo get para conferir se existe um registro com o ultimo id salvo
+                idUltimo = dis.readInt();
+                
+                //confirmar a existencia 
+                existeIdInicial = true;
+                
+                //fechar arquivo
+                fis.close();
+
+            }catch (Exception e){
+                System.out.println("Não há para adicionar");
+            }
 
             //============= DEFINÇOES ===================
             
             //definir variável para escrita aleatoria
             arq = new RandomAccessFile("./Relatorios.db", "rw");
 
-            // // //definir o nome do arquivo que ira ser escrito
-            // fos = new FileOutputStream("./Relatorios.db");
-
-            // // //definir variável auxiliar para escrita
-            // dos = new DataOutputStream(fos);
-
             //============ FIM DAS DEFINIÇÕES ==============
 
+            if(existeIdInicial == false)
+            {
+                arq.writeInt(cpf);
+            }
             //salvar enderço inicial do arquivo
             long p1 = arq.getFilePointer();
-            
-            arq.writeInt(idUltimo);
-            
 
             //Salvar a classe em um array dinâmico
             bytes = relatorio.toByteArray();
             
             //Salvar na variável o tamanho do array
             int tamanho = bytes.length;
-
-            //def
             
             //============= ESCRITA ======================
             
@@ -114,15 +116,19 @@ public class Models{
                 bytesLixo = new byte[((tamanhoPadrao - tamanho) - 1)];
                 arq.write(bytesLixo);
             }
+
+            //salvar enderço final do arquivo
+            long p2 = arq.getFilePointer();
             
-            //voltar com o ponteiro para o começo do arquivo
-            arq.seek(p1);
-
-            //escrever non começo do arqyuivo o ultimo id escrito
-            arq.writeInt((idUltimo + 1));
-            // fos.flush();
-
-            arq.seek(p1);
+            if(existeIdInicial == true)
+            {
+                //voltar com o ponteiro para o começo do arquivo
+                arq.seek(p1);
+    
+                //escrever non começo do arqyuivo o ultimo id escrito
+                arq.writeInt((idUltimo + 1));
+            }
+            arq.seek(p2);
             //fechar arquivo
             arq.close();
             
@@ -177,7 +183,7 @@ public class Models{
 
                 //mostrar
 
-                System.out.println(relatorio.toString())11;
+                System.out.println(relatorio.toString());
 
                 //verificar busca
 
@@ -201,6 +207,11 @@ public class Models{
             return null;
         }
     }
+
+
+
+
+
 
     public static void menu(){
         //printar menu
@@ -258,11 +269,12 @@ public class Models{
             do{
                 System.out.println("Opção:");
                 op = ler.nextInt();
-
+                System.out.print("\r\n");
+                
                     switch(op){
 
                     case 1:
-
+                        System.out.print("\r\n");
                         //chamar menu
                         menu2();
                         //definir dados
@@ -279,13 +291,15 @@ public class Models{
                         int op2;
 
                         do{
+                            
                             System.out.println("Opção:");
-
+                            
                             op2 = ler.nextInt();
                             
                             //esvaziar buffer
                             ler.nextLine();
-
+                            
+                            System.out.print("\r\n");
                             switch(op2){
 
                                 case 1:
@@ -295,16 +309,34 @@ public class Models{
                                     System.out.println("");
                                 break;
                                 case 2:
-                                    System.out.println("");
-                                    System.out.println("INSERIR NOME:");
-                                    nome = ler.nextLine();
-                                    System.out.println("");
+                                    do{
+                                        System.out.println("");
+                                        System.out.println("INSERIR NOME:");
+                                        nome = ler.nextLine();
+
+                                        //testar se o nome do paciente tem mais que 40 caracteres
+                                        if(nome.length() > 40)
+                                        {
+                                            System.out.println("Nome muito grande, tente novamente!");
+                                        }
+                                        System.out.println("");
+
+                                    }while(nome.length() > 40);
                                 break;
                                 case 3:
-                                    System.out.println("");
-                                    System.out.println("INSERIR DATA DE NASCIMENTO:");
-                                    dataNascimento = ler.nextLine();
-                                    System.out.println("");
+                                    do{
+                                        System.out.println("");
+                                        System.out.println("INSERIR DATA DE NASCIMENTO:");
+                                        dataNascimento = ler.nextLine();
+    
+                                        //testar se o nome do paciente tem mais que 40 caracteres
+                                        if(nome.length() > 40)
+                                        {
+                                            System.out.println("Anotação muito grande, tente novamente!");
+                                        }
+                                        System.out.println("");
+
+                                    }while(nome.length() > 40);
                                 break;
                                 case 4:
                                     //tratar erro com o repetição
@@ -336,9 +368,18 @@ public class Models{
                                 break;
                             
                                 case 5:
-                                    System.out.println("");
-                                    System.out.println("ANOTAÇÃO:");
-                                    anotation = ler.nextLine();
+                                    do{
+                                        System.out.println("");
+                                        System.out.println("ANOTAÇÃO:");
+                                        anotation = ler.nextLine();
+                                        
+                                        //exibir mensgaem de erro
+                                        if(anotation.length() > 340)
+                                        {
+                                            System.out.println("Anotação muito grande, tente novamente!");
+                                        }
+                                        
+                                    }while(anotation.length() > 340);
                                     System.out.println("");
                                 break;
                                 case 6:
@@ -379,11 +420,13 @@ public class Models{
                             if (op2 != 8){
                                 menu2();
                             }
+                            System.out.print("\r\n");
                             ler.nextLine();
                         }while(sair == false);
                     break;
 
                     case 2:
+                        System.out.print("\r\n");
                         //DEFINIR DADOS
                         int cpfDigitado;
                         boolean sucesso = false;
@@ -410,17 +453,25 @@ public class Models{
                             System.out.println("CPF NÃO REGISTRADO");
                             System.out.println("");
                         }
+                        //chamnar menu principal
+                        menu();
                     break;
                     case 5:
+                        System.out.print("\r\n");
                         sairG = true;
                         System.out.println("");
                         System.out.println("OBRIGADO POR USAR NOSSO SISTEMA");
                         System.out.println("");
+                        //chamnar menu principal
+                        menu();
                     break;
                     default:
+                        System.out.print("\r\n");
                         System.out.println("");
                         System.out.println("Selecione apenas um dos números");
                         System.out.println("");
+                        //chamnar menu principal
+                        menu();
                 }
 
             }while(sairG == false);
@@ -428,7 +479,6 @@ public class Models{
         
 
     }
-
     public static void main(String[] args){
 
         interfaces();

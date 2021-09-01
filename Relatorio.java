@@ -117,9 +117,9 @@ public class Relatorio{
         //definir conversor de dados primitivos para bytes
         DataOutputStream dos = new DataOutputStream(baos);
         
-        //definir variavrel que conversao de data para milisegundos
-
+        //definir variavel que conversao de data para milisegundos
         long time = this.dataNascimento.getTime();
+
         //escrever dados no array de bytes
 
         dos.writeInt(this.Cpf);
