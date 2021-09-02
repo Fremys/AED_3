@@ -51,6 +51,13 @@ public class Models{
         int idUltimo = 0;
         boolean existeIdInicial = false;
 
+        /*
+        =========================================== EXECUTAR PELA PRIMEIRA VEZ ====================================
+        * Essa parte do código verifica se há um arquivo binário criado em disco antes de realizar qualquer operação
+        * Caso exista, ele executa o insert normalmente, porém caso não exista ele cria o arquivo.
+        */
+        
+
         try{       
             //criar uma nova classe de Relatório
             
@@ -78,13 +85,23 @@ public class Models{
                 fis.close();
 
             }catch (Exception e){
-                System.out.println("Não há para adicionar");
             }
+
+            //=========================================== FIM DO EXECUTAR PELA PRIMEIRA VEZ ===========================================
 
             //============= DEFINÇOES ===================
             
             //definir variável para escrita aleatoria
             arq = new RandomAccessFile("./Relatorios.db", "rw");
+
+            //salvar enderço inicial do arquivossssss
+            long p1 = arq.getFilePointer();
+
+            //salvar em variável o tamanho do arquivo final
+            long tamArq = arq.length();
+
+            //posicionar o ponteiro no final do arquivo
+            arq.seek(tamArq);
 
             //============ FIM DAS DEFINIÇÕES ==============
 
@@ -92,8 +109,6 @@ public class Models{
             {
                 arq.writeInt(cpf);
             }
-            //salvar enderço inicial do arquivo
-            long p1 = arq.getFilePointer();
 
             //Salvar a classe em um array dinâmico
             bytes = relatorio.toByteArray();
@@ -104,35 +119,33 @@ public class Models{
             //============= ESCRITA ======================
             
             //Escrever tamanho do registro
-            
             arq.writeInt(tamanhoPadrao);
             arq.write(bytes);
             
             //inserir lixo até completar o tamanho padrão
-            
             if(tamanho < tamanhoPadrao)
             {
                 //definir lixo
-                bytesLixo = new byte[((tamanhoPadrao - tamanho) - 1)];
+                bytesLixo = new byte[((tamanhoPadrao - tamanho))];
                 arq.write(bytesLixo);
             }
-
-            //salvar enderço final do arquivo
-            long p2 = arq.getFilePointer();
             
+            //Atualizar id do inicio do arquivo
             if(existeIdInicial == true)
             {
                 //voltar com o ponteiro para o começo do arquivo
                 arq.seek(p1);
     
-                //escrever non começo do arqyuivo o ultimo id escrito
+                //escrever non começo do arquivo o ultimo id escrito
                 arq.writeInt((idUltimo + 1));
             }
-            arq.seek(p2);
+
             //fechar arquivo
             arq.close();
             
+            //return
             return true;
+
         }catch (Exception e){
             e.printStackTrace();
             return false;
@@ -150,16 +163,12 @@ public class Models{
 
             //definir variável para escrita
 
-            fis = new FileInputStream("./Relatorios.db");
-
-            //definir variável auxiliar para escrita
-
-            dis = new DataInputStream(fis);
+            arq = new RandomAccessFile("./Relatorios.db", "rw");
 
             //pular um numero inteiro no ponteiro
-            int tmp = dis.readInt();
+            int tmp = arq.readInt();
 
-            //definr variavel de encontro
+            //definir variavel de encontro
             boolean encontrou = false;
 
             //entrar em um looping até encontrar o cpf solicitado
@@ -167,7 +176,7 @@ public class Models{
 
                 //Salvar na variável o tamanho do array
 
-                int tamanho = dis.readInt();
+                int tamanho = arq.readInt();
 
                 //Salvar a classe em um array dinâmico
 
@@ -175,22 +184,17 @@ public class Models{
 
                 //salvar os dados em um vetor
 
-                dis.read(bytes);
+                arq.read(bytes);
 
                 //integrar dados salvo a uma Classe
 
                 relatorio.frontByteArray(bytes);
 
-                //mostrar
-
-                System.out.println(relatorio.toString());
-
                 //verificar busca
 
-                if(cpf == relatorio.getCpf()){
+                if(cpf == relatorio.getCpf() && cpf != -1){
                     encontrou = true;
                 }
-
 
             }while(encontrou == false);
 
@@ -203,15 +207,130 @@ public class Models{
 
 
         }catch (Exception e){
-            e.printStackTrace();
             return null;
         }
     }
 
+    //Método de delete
+    public static void deleteRelatorio(int cpf){
+
+        try{
+            //criar uma nova classe de Relatório
+
+            Relatorio relatorio = new Relatorio();
+
+            //definir variável para escrita
+
+            arq = new RandomAccessFile("./Relatorios.db", "rw");
+
+            //pular um numero inteiro no ponteiro
+            int tmp = arq.readInt();
+
+            //definir variavel de encontro
+            boolean encontrou = false;
+
+            //variavel que salva o ponteiro do arquivo desejado
+            long posArq = -1;
+
+            //entrar em um looping até encontrar o cpf solicitado
+            do{
+                //Salvar na variável o tamanho do array
+                int tamanho = arq.readInt();
+
+                //salvar posição do arquivo
+                posArq = arq.getFilePointer();
+
+                //Salvar a classe em um array dinâmico
+                bytes = new byte[tamanho];
+
+                //salvar os dados em um vetor
+                arq.read(bytes);
+
+                //integrar dados salvo a uma Classe
+                relatorio.frontByteArray(bytes);
+
+                //verificar busca
+                if(cpf == relatorio.getCpf()){
+                    encontrou = true;
+                }
+
+            }while(encontrou == false);
+            
+            //verificar se o relatorio existe
+            if(encontrou == true){
+
+                //definir auxiliar de leitura
+                Scanner ler = new Scanner(System.in);
+
+                //definir dados
+                int resp = -1;
+
+                //mostrar
+                System.out.println(relatorio.toString());
+
+                //confirmar com o usuário
+                System.out.print("\n");
+                System.out.println("Tem certeza que deseja excluir esse relatório?");
+                System.out.print("\n");
+
+                //exibir menu
+                System.out.println("\n");
+                System.out.println("1 - SIM");
+                System.out.println("2 - NÃO");
+                System.out.println("\n");
+                
+                //salvar mensagem
+
+                do{
+                    //ler resposta
+                    resp = ler.nextInt();
+                    ler.nextLine();
+                    
+                    //verificar se a resposta esta incorreta
+                    if(resp != 1 && resp != 2){
+                        System.out.println("\n");
+                        System.out.println("Resposta incorreta, insira apenas um das opções disponíveis");
+                        
+                        //exibir menu
+                        System.out.println("\n");
+                        System.out.println("1 - SIM");
+                        System.out.println("2 - NÃO");
+                        System.out.println("\n");
+                    }
+
+                }while(resp != 1 && resp != 2);
+
+                //testar resposta recebida
+                if(resp == 1)
+                {
+                    //mover o ponteiro para o arquivo inicial
+                    arq.seek(posArq);
+
+                    //salvar o id como excluído
+                    arq.writeInt(-1);
+
+                    System.out.print("\r\n");
+                    System.out.print("PACIENTE DELETADO COM SUCESSO");
+                    System.out.print("\n");
+
+                }
+
+                //saltar linhas
+                System.out.print("\r\n");
+
+            }
+            else{
+                //mostrar na tela
+                System.out.println("\n\n\n");
+                System.out.println("CPF não registrado");
+                System.out.println("\n\n\n");
+            }
 
 
+        }catch (Exception e){
+        }
 
-
+    }
 
     public static void menu(){
         //printar menu
@@ -374,12 +493,12 @@ public class Models{
                                         anotation = ler.nextLine();
                                         
                                         //exibir mensgaem de erro
-                                        if(anotation.length() > 340)
+                                        if(anotation.length() > 540)
                                         {
                                             System.out.println("Anotação muito grande, tente novamente!");
                                         }
                                         
-                                    }while(anotation.length() > 340);
+                                    }while(anotation.length() > 540);
                                     System.out.println("");
                                 break;
                                 case 6:
@@ -453,25 +572,44 @@ public class Models{
                             System.out.println("CPF NÃO REGISTRADO");
                             System.out.println("");
                         }
-                        //chamnar menu principal
+                        //chamar menu principal
                         menu();
+                    break;
+                    case 4:
+                        System.out.print("\r\n");
+                        //DEFINIR DADOS
+                        int cpfDigitadoDelete;
+
+                        //menu
+                        System.out.println("");
+                        System.out.println("DIGITE O CPF DO PACIENTE:");
+                        cpfDigitadoDelete = ler.nextInt();
+                        System.out.println("");
+
+                        //chamar metodo de delete
+                        deleteRelatorio(cpfDigitadoDelete);
+
+                        //chamar menu principal
+                        menu();
+
                     break;
                     case 5:
                         System.out.print("\r\n");
+                        System.out.print("OBRIGADO POR USAR NOSSO SISTEMA :)");
+                        System.out.print("\r\n");
+
+                        //Modificar a variavel de saida
                         sairG = true;
-                        System.out.println("");
-                        System.out.println("OBRIGADO POR USAR NOSSO SISTEMA");
-                        System.out.println("");
-                        //chamnar menu principal
-                        menu();
                     break;
                     default:
                         System.out.print("\r\n");
                         System.out.println("");
                         System.out.println("Selecione apenas um dos números");
                         System.out.println("");
+
                         //chamnar menu principal
                         menu();
+                    break;
                 }
 
             }while(sairG == false);
@@ -480,8 +618,7 @@ public class Models{
 
     }
     public static void main(String[] args){
-
+        //Chamar a interface do sistema
         interfaces();
-
     }
 }
