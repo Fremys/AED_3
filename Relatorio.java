@@ -21,7 +21,7 @@ import java.text.DateFormat;
 public class Relatorio{
 
     //atributos da classe principal
-    protected int Cpf;
+    protected long Cpf;
     protected String nome;
     protected Date dataNascimento;
     protected boolean sexo;
@@ -33,7 +33,7 @@ public class Relatorio{
 
     //construtores
 
-    public Relatorio(int cpf, String nome, String dataNascimento, boolean sexo, String anotation){
+    public Relatorio(long cpf, String nome, String dataNascimento, boolean sexo, String anotation){
         this.Cpf = cpf;
         this.nome = nome;
 
@@ -59,7 +59,7 @@ public class Relatorio{
     
     //métodos gets e seters
     
-    public int getCpf(){
+    public long getCpf(){
         return this.Cpf;
     }
 
@@ -77,6 +77,27 @@ public class Relatorio{
 
     public String getAnotation(){
         return this.anotation;
+    }
+
+    public void setNome(String nome){
+        this.nome = nome;
+    }
+
+    public void setData(String data){
+        //tratamento de erro obrigatorio
+        try{
+            this.dataNascimento = formato.parse(data);
+        }catch (Exception e){
+            this.dataNascimento = null;
+        }
+    }
+
+    public void setSexo(boolean sexo){
+        this.sexo = sexo;
+    }
+
+    public void setAnotation(String anotation){
+        this.anotation = anotation;
     }
 
     //Metodo toString
@@ -122,7 +143,7 @@ public class Relatorio{
 
         //escrever dados no array de bytes
 
-        dos.writeInt(this.Cpf);
+        dos.writeLong(this.Cpf);
         dos.writeUTF(this.nome);
         dos.writeLong(time);
         dos.writeBoolean(this.sexo);
@@ -148,7 +169,7 @@ public class Relatorio{
         DataInputStream dis = new DataInputStream(bais);
 
 
-        this.Cpf = dis.readInt();
+        this.Cpf = dis.readLong();
         this.nome = dis.readUTF();
         this.dataNascimento = new Date(dis.readLong());
         this.sexo = dis.readBoolean();

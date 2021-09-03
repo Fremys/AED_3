@@ -15,8 +15,6 @@ import java.io.RandomAccessFile;
 
 import java.util.Scanner;
 
-
-
 public class Models{
 
     //definir arquivo de dados
@@ -44,11 +42,11 @@ public class Models{
 
 
     //Metodo de inserção de relatórios em arquivo
-    public static boolean insertRelatorio(int cpf, String nome, String dataNascimento, boolean sexo, String anotation){
+    public static boolean insertRelatorio(long cpf, String nome, String dataNascimento, boolean sexo, String anotation){
         
         //deifnir tamanho
-        int tamanhoPadrao = 600;
-        int idUltimo = 0;
+        int tamanhoPadrao = 3000;
+        long idUltimo = 0;
         boolean existeIdInicial = false;
 
         /*
@@ -76,7 +74,7 @@ public class Models{
                 dis = new DataInputStream(fis);
 
                 //metodo get para conferir se existe um registro com o ultimo id salvo
-                idUltimo = dis.readInt();
+                idUltimo = dis.readLong();
                 
                 //confirmar a existencia 
                 existeIdInicial = true;
@@ -94,7 +92,7 @@ public class Models{
             //definir variável para escrita aleatoria
             arq = new RandomAccessFile("./Relatorios.db", "rw");
 
-            //salvar enderço inicial do arquivossssss
+            //salvar enderço inicial do arquivos
             long p1 = arq.getFilePointer();
 
             //salvar em variável o tamanho do arquivo final
@@ -107,7 +105,7 @@ public class Models{
 
             if(existeIdInicial == false)
             {
-                arq.writeInt(cpf);
+                arq.writeLong(cpf);
             }
 
             //Salvar a classe em um array dinâmico
@@ -137,7 +135,7 @@ public class Models{
                 arq.seek(p1);
     
                 //escrever non começo do arquivo o ultimo id escrito
-                arq.writeInt((idUltimo + 1));
+                arq.writeLong((idUltimo + 1));
             }
 
             //fechar arquivo
@@ -147,14 +145,13 @@ public class Models{
             return true;
 
         }catch (Exception e){
-            e.printStackTrace();
             return false;
         }
 
     }
 
     //Método de recuperação de arquivos
-    public static Relatorio getRelatorio(int cpf){
+    public static Relatorio getRelatorio(long cpf){
 
         try{
             //criar uma nova classe de Relatório
@@ -165,8 +162,8 @@ public class Models{
 
             arq = new RandomAccessFile("./Relatorios.db", "rw");
 
-            //pular um numero inteiro no ponteiro
-            int tmp = arq.readInt();
+            //pular o ultimo id salvo no ponteiro
+            long tmp = arq.readLong();
 
             //definir variavel de encontro
             boolean encontrou = false;
@@ -212,7 +209,7 @@ public class Models{
     }
 
     //Método de delete
-    public static void deleteRelatorio(int cpf){
+    public static boolean deleteRelatorio(long cpf){
 
         try{
             //criar uma nova classe de Relatório
@@ -224,7 +221,7 @@ public class Models{
             arq = new RandomAccessFile("./Relatorios.db", "rw");
 
             //pular um numero inteiro no ponteiro
-            int tmp = arq.readInt();
+            long tmp = arq.readLong();
 
             //definir variavel de encontro
             boolean encontrou = false;
@@ -262,76 +259,109 @@ public class Models{
                 //definir auxiliar de leitura
                 Scanner ler = new Scanner(System.in);
 
-                //definir dados
-                int resp = -1;
+                //mover o ponteiro para o arquivo inicial
+                arq.seek(posArq);
 
-                //mostrar
-                System.out.println(relatorio.toString());
+                //salvar o id como excluído
+                arq.writeLong(-1);
 
-                //confirmar com o usuário
-                System.out.print("\n");
-                System.out.println("Tem certeza que deseja excluir esse relatório?");
-                System.out.print("\n");
-
-                //exibir menu
-                System.out.println("\n");
-                System.out.println("1 - SIM");
-                System.out.println("2 - NÃO");
-                System.out.println("\n");
-                
-                //salvar mensagem
-
-                do{
-                    //ler resposta
-                    resp = ler.nextInt();
-                    ler.nextLine();
-                    
-                    //verificar se a resposta esta incorreta
-                    if(resp != 1 && resp != 2){
-                        System.out.println("\n");
-                        System.out.println("Resposta incorreta, insira apenas um das opções disponíveis");
-                        
-                        //exibir menu
-                        System.out.println("\n");
-                        System.out.println("1 - SIM");
-                        System.out.println("2 - NÃO");
-                        System.out.println("\n");
-                    }
-
-                }while(resp != 1 && resp != 2);
-
-                //testar resposta recebida
-                if(resp == 1)
-                {
-                    //mover o ponteiro para o arquivo inicial
-                    arq.seek(posArq);
-
-                    //salvar o id como excluído
-                    arq.writeInt(-1);
-
-                    System.out.print("\r\n");
-                    System.out.print("PACIENTE DELETADO COM SUCESSO");
-                    System.out.print("\n");
-
-                }
-
-                //saltar linhas
-                System.out.print("\r\n");
+                return true;
 
             }
             else{
-                //mostrar na tela
-                System.out.println("\n\n\n");
-                System.out.println("CPF não registrado");
-                System.out.println("\n\n\n");
+                return false;
             }
-
-
         }catch (Exception e){
+            return false;
         }
 
     }
 
+    //Método Update
+    public static boolean updateRelatorio(Relatorio relatorio){
+        try{
+            //deifnir tamanho
+            int tamanhoPadrao = 3000;
+
+            //definr classe e variavel auxilixar
+            Relatorio aux = new Relatorio();
+            byte[] bytesaux;
+
+
+            //definir variável para escrita
+            arq = new RandomAccessFile("./Relatorios.db", "rw");
+
+            //pular um numero inteiro no ponteiro
+            long tmp = arq.readLong();
+
+            //definir variavel de encontro
+            boolean encontrou = false;
+
+            //Salvar a classe em um array dinâmico
+            bytes = relatorio.toByteArray();
+
+            //definir tamanho
+            int tamanho = bytes.length;
+
+            //variavel que salva o ponteiro do arquivo desejado
+            long posArq = -1;
+
+            //entrar em um looping até encontrar o cpf solicitado
+            do{
+                //salvar posição do arquivo
+                posArq = arq.getFilePointer();
+                
+                //Salvar na variável o tamanho do array
+                int tamanhoArq = arq.readInt();
+
+                //Salvar a classe em um array dinâmico
+                bytesaux = new byte[tamanhoArq];
+
+                //salvar os dados em um vetor
+                arq.read(bytesaux);
+
+                //integrar dados salvo a uma Classe
+                aux.frontByteArray(bytesaux);
+
+                //verificar busca
+                if(aux.getCpf() == relatorio.getCpf()){
+                    encontrou = true;
+                }
+
+            }while(encontrou == false);
+            
+            //verificar se o relatorio existe
+            if(encontrou == true){
+
+                //mover o ponteiro para o arquivo inicial
+                arq.seek(posArq);
+
+                //salvar o id como excluído
+                arq.writeInt(tamanhoPadrao);
+
+                //SALVAR DADOS
+                arq.write(bytes);
+
+                //inserir lixo até completar o tamanho padrão
+                if(tamanho < tamanhoPadrao)
+                {
+                    //definir lixo
+                    bytesLixo = new byte[((tamanhoPadrao - tamanho))];
+                    arq.write(bytesLixo);
+                }
+
+                return true;
+
+            }
+            else{
+                
+                return false;
+            }
+        }catch (Exception e){
+            return false;
+        }
+    }
+   
     public static void menu(){
         //printar menu
 
@@ -360,6 +390,22 @@ public class Models{
         System.out.println("6 - MOSTRAR:");
         System.out.println("7 - SALVAR:");
         System.out.println("8 - VOLTAR:");
+        System.out.println("");
+        System.out.println("");
+    }
+
+    public static void menuEdit(){
+        //printar menu
+
+        System.out.println("");
+        System.out.println("");
+        System.out.println("1 - NOME:");
+        System.out.println("2 - DATA DE NASCIMENTO:");
+        System.out.println("3 - SEXO:");
+        System.out.println("4 - ANOTAÇÕES:");
+        System.out.println("5 - MOSTRAR:");
+        System.out.println("6 - SALVAR:");
+        System.out.println("7 - VOLTAR:");
         System.out.println("");
         System.out.println("");
     }
@@ -398,11 +444,11 @@ public class Models{
                         menu2();
                         //definir dados
                         Relatorio relatorio;
-                        int cpf = -1;
+                        long cpf = -1;
                         String nome = " ";
-                        String dataNascimento = "";
+                        String dataNascimento = " ";
                         boolean sexoBol = false;
-                        String anotation = "";
+                        String anotation = " ";
                         boolean sair = false;
                         int sexo = 0;
 
@@ -416,15 +462,17 @@ public class Models{
                             op2 = ler.nextInt();
                             
                             //esvaziar buffer
+                            System.out.println("Caso necessário, aperte ENTER para continuar...");
                             ler.nextLine();
-                            
+
+                            //saltar espaço
                             System.out.print("\r\n");
                             switch(op2){
 
                                 case 1:
                                     System.out.println("");
                                     System.out.println("INSERIR CPF:");
-                                    cpf = ler.nextInt();
+                                    cpf = ler.nextLong();
                                     System.out.println("");
                                 break;
                                 case 2:
@@ -434,13 +482,13 @@ public class Models{
                                         nome = ler.nextLine();
 
                                         //testar se o nome do paciente tem mais que 40 caracteres
-                                        if(nome.length() > 40)
+                                        if(nome.length() > 50)
                                         {
-                                            System.out.println("Nome muito grande, tente novamente!");
+                                            System.out.println("Nome muito grande, Abrevie!");
                                         }
                                         System.out.println("");
 
-                                    }while(nome.length() > 40);
+                                    }while(nome.length() > 50);
                                 break;
                                 case 3:
                                     do{
@@ -449,13 +497,13 @@ public class Models{
                                         dataNascimento = ler.nextLine();
     
                                         //testar se o nome do paciente tem mais que 40 caracteres
-                                        if(nome.length() > 40)
+                                        if(dataNascimento.length() > 10 || dataNascimento.length() < 10)
                                         {
-                                            System.out.println("Anotação muito grande, tente novamente!");
+                                            System.out.println("Data inválida, tente novamente!");
                                         }
                                         System.out.println("");
 
-                                    }while(nome.length() > 40);
+                                    }while(dataNascimento.length() > 10 || dataNascimento.length() < 10);
                                 break;
                                 case 4:
                                     //tratar erro com o repetição
@@ -493,12 +541,13 @@ public class Models{
                                         anotation = ler.nextLine();
                                         
                                         //exibir mensgaem de erro
-                                        if(anotation.length() > 540)
+                                        if(anotation.length() > (2932))
                                         {
                                             System.out.println("Anotação muito grande, tente novamente!");
+                                            System.out.println(anotation.length());
                                         }
                                         
-                                    }while(anotation.length() > 540);
+                                    }while((anotation.length()) > (2932));
                                     System.out.println("");
                                 break;
                                 case 6:
@@ -512,21 +561,40 @@ public class Models{
                                     System.out.println("");
                                 break;                         
                                 case 7:
-                                    boolean sucesso = insertRelatorio(cpf, nome, dataNascimento, sexoBol, anotation);
+                                    //definir um classe auxiliar para verificação
+                                    Relatorio aux = new Relatorio();
 
-                                    //TESTAR SE A OPERAÇÃO FOI BEM SUCEDIDA
-                                    if(sucesso){
+                                    //procurar algum usuário já registrado com aquele cpf
+                                    aux = getRelatorio(cpf);
+
+                                    //testar se encontrou
+                                    if(aux == null) {
+                                        
+                                        //EXECUTAR O METODO DE INSERÇÃO
+                                        boolean sucesso = insertRelatorio(cpf, nome, dataNascimento, sexoBol, anotation);
+    
+                                        //TESTAR SE A OPERAÇÃO FOI BEM SUCEDIDA
+                                        if(sucesso){
+                                            System.out.println("");
+                                            System.out.println("SALVO COM SUCESSO");
+                                            System.out.println("");
+                                        }
+                                        else{
+                                            System.out.println("");
+                                            System.out.println("ERRO, O ARQUIVO NÃO PODE SER SALVO");
+                                            System.out.println("");
+                                        }
+                                    }
+                                    else
+                                    {
                                         System.out.println("");
-                                        System.out.println("SALVADO COM SUCESSO");
+                                        System.out.println("CPF JÁ CADASTRADO ANTERIORMENTE");
                                         System.out.println("");
                                     }
-                                    else{
-                                        System.out.println("");
-                                        System.out.println("ERRO, O ARQUIVO NÃO PODE SER SALVO");
-                                        System.out.println("");
-                                    }
+
                                 break;
                                 case 8:
+                                    //atualizar variavel
                                     sair = true;
                                     //chamar o menu de opções
                                     menu();
@@ -540,32 +608,259 @@ public class Models{
                                 menu2();
                             }
                             System.out.print("\r\n");
+                            System.out.println("Caso necessário, aperte ENTER para continuar...");
                             ler.nextLine();
+                            System.out.println("");
                         }while(sair == false);
                     break;
 
                     case 2:
-                        System.out.print("\r\n");
                         //DEFINIR DADOS
-                        int cpfDigitado;
+                        System.out.print("\r\n");
+                        long cpfDigitado;
                         boolean sucesso = false;
                         Relatorio relatorios;
 
                         //menu
                         System.out.println("");
                         System.out.println("DIGITE O CPF DO PACIENTE:");
-                        cpfDigitado = ler.nextInt();
+                        cpfDigitado = ler.nextLong();
                         System.out.println("");
 
                         //pegar relatorio do paciente
                         relatorios = getRelatorio(cpfDigitado);
+
+                        if(relatorios != null){
+
+                            System.out.println("");
+                            System.out.println(relatorios.toString());
+                            System.out.println("");                          
+                        }
+                        else{
+                            System.out.println("");
+                            System.out.println("CPF NÃO REGISTRADO");
+                            System.out.println("");
+                        }
                         
+                        //chamar menu principal
+                        menu();
+                    break;
+                    case 3:
+                        //DEFINIR DADOS
+                        System.out.print("\r\n");
+                        long cpfDigitadoUpdate;
+                        boolean sucessoUpdate = false;
+                        Relatorio relatorioUpdate;
+
+                        //menu
+                        System.out.println("");
+                        System.out.println("DIGITE O CPF DO PACIENTE:");
+                        cpfDigitadoUpdate = ler.nextLong();
+                        System.out.println("");
+
+                        //mostrar na tela o usuário antes de deleta-lo
+                        relatorioUpdate = getRelatorio(cpfDigitadoUpdate);  
 
                         //testar se o cpf foi cadastrado
-                        if(relatorios != null){
-                            System.out.println("");
-                            System.out.println(relatorios.toString());;
-                            System.out.println("");
+                        if(relatorioUpdate != null){
+
+                            //definir dados
+                            int numU = -1;
+
+                            do{
+                                
+                                System.out.println("");
+                                System.out.println(relatorioUpdate.toString());
+                                System.out.println("");
+    
+                                //MOSTRAR TELA 
+                                System.out.println("");
+                                System.out.println("ESSE É USUÁRIO QUE VOCÊ DESEJA EDITAR? ");
+                                System.out.println("1 - SIM");
+                                System.out.println("2 - NÃO");
+                                System.out.print("Opção: ");
+
+                                //ler do usuário
+                                numU = ler.nextInt();
+
+                                //testar se houve erro na entrada do usuário
+                                if(numU != 1 && numU != 2){
+                                    System.out.println("");
+                                    System.out.println("Digite apenas uma das opções");
+                                    System.out.println("");
+                                }
+
+                            }while(numU != 1 && numU != 2);
+                            
+                            //Testar se o usuário deseja deletar
+                            if(numU == 1){
+                                
+                                System.out.print("\r\n");
+
+                                //chamar menu
+                                menuEdit();
+                                
+                                //definir dados
+                                long cpfMostrar = -1;
+                                String nomeMostrar = " ";
+                                String dataNascimentoMostrar = " ";
+                                boolean sexoBolMostrar = false;
+                                String anotationMostrar = " ";
+                                boolean sairMostrar = false;
+                                int sexoMostrar = 0;
+        
+                                //dividir telas
+                                int op3;
+        
+                                do{
+                                    
+                                    System.out.println("Opção:");
+                                    
+                                    //ler opção do usuario
+                                    op3= ler.nextInt();
+
+                                    //esvaziar buffer
+                                    System.out.println("Caso necessário, aperte ENTER para continuar...");
+                                    ler.nextLine();
+                                    System.out.print("\r\n");
+                                    switch(op3){
+
+                                        case 1:
+                                            do{
+                                                System.out.println("");
+                                                System.out.println("NOME: " + relatorioUpdate.getNome());
+                                                System.out.println("EDITAR NOME: ");
+                                                nomeMostrar = ler.nextLine();
+        
+                                                //testar se o nome do paciente tem mais que 40 caracteres
+                                                if(nomeMostrar.length() > 50)
+                                                {
+                                                    System.out.println("Nome muito grande, tente abreviar!");
+                                                }
+                                                System.out.println("");
+                                            }while(nomeMostrar.length() > 50);
+
+                                            relatorioUpdate.setNome(nomeMostrar);
+                                        break;
+                                        case 2:
+                                            do{
+                                                System.out.println("");
+                                                System.out.println("DATA DE NASCIMNETO: " + relatorioUpdate.getDataNascimento());
+                                                System.out.println("EDITAR DATA DE NASCIMENTO:");
+                                                dataNascimentoMostrar = ler.nextLine();
+            
+                                                //testar se o nome do paciente tem mais que 40 caracteres
+                                                if(dataNascimentoMostrar.length() > 10 || dataNascimentoMostrar.length() < 10)
+                                                {
+                                                    System.out.println("Data inválida");
+                                                }
+                                                System.out.println("");
+        
+                                            }while(dataNascimentoMostrar.length() > 10 || dataNascimentoMostrar.length() < 10);
+
+                                            relatorioUpdate.setData(dataNascimentoMostrar);
+                                            
+                                        break;
+                                        case 3:
+                                            //tratar erro com o repetição
+                                            do{
+                                                System.out.println("");
+                                                System.out.println("SEXO: " + relatorioUpdate.getSexo());
+                                                System.out.println("1 - MASCULINO");
+                                                System.out.println("2 - FEMININO");
+                                                System.out.println("");
+                                                sexoMostrar = ler.nextInt();
+        
+                                                //exibir mensgaem de erro
+        
+                                                if(sexoMostrar != 1 && sexoMostrar != 2)
+                                                {
+                                                    System.out.println("");
+                                                    System.out.println("Selecione apenas uma das letras");
+                                                    System.out.println("");
+                                                }
+                                            }while(sexoMostrar != 1 && sexoMostrar != 2);
+        
+                                            //conveter para o tipo de dado adequado para a memoria
+        
+                                            if(sexoMostrar == 1){
+                                            
+                                                sexoBolMostrar = true;
+                                            }
+                                            else if(sexoMostrar == 2){
+
+                                                sexoBolMostrar = false;
+                                            }
+                                            
+                                            relatorioUpdate.setSexo(sexoBolMostrar);
+
+                                        break;
+                                    
+                                        case 4:
+                                            do{
+                                                System.out.println("");
+                                                System.out.println("ANOTAÇÃO:\n" + relatorioUpdate.getAnotation());
+                                                System.out.println("");
+                                                System.out.println("ANOTAÇÃO:");
+                                                anotationMostrar = ler.nextLine();
+                                                
+                                                //exibir mensgaem de erro
+                                                if(anotationMostrar.length() > 2932)
+                                                {
+                                                    System.out.println("Anotação muito grande, tente novamente!");
+                                                    System.out.println((anotationMostrar.length()));
+                                                }
+                                                
+                                            }while(anotationMostrar.length() > 2932);
+
+                                            relatorioUpdate.setAnotation(anotationMostrar);
+
+                                            System.out.println("");
+                                        break;
+                                        case 5:
+                                            System.out.println("");
+                                            System.out.println(relatorioUpdate.toString());
+                                            System.out.println("");
+                                        break;                         
+                                        case 6:
+                                            boolean sucessoInUpdate = updateRelatorio(relatorioUpdate);
+        
+                                            //TESTAR SE A OPERAÇÃO FOI BEM SUCEDIDA
+                                            if(sucessoInUpdate){
+                                                System.out.println("");
+                                                System.out.println("ATUALIZADO COM SUCESSO");
+                                                System.out.println("");
+                                            }   
+                                            else{
+                                                System.out.println("");
+                                                System.out.println("ERRO, O ARQUIVO NÃO PODE SER ATUALIZADO");
+                                                System.out.println("");
+                                            }
+                                        break;
+                                        case 7:
+                                            //Ataulizar variavel
+                                            sairMostrar = true;
+                                            //chamar o menu de opções
+                                            menu();
+                                        break;
+                                        default:
+                                            System.out.println("");
+                                            System.out.println("Selecione apenas um dos números");
+                                            System.out.println("");
+                                    }
+                                    //mostrar menu novamente
+                                    if (op3 != 7){
+                                        menuEdit();
+                                    }
+
+                                    //esvaziar buffer
+                                    System.out.print("\r\n");
+
+                                    System.out.println("Caso necessário, aperte ENTER para continuar...");
+                                    ler.nextLine();
+                                    System.out.println("");
+                                }while(sairMostrar == false);
+                            }
                         }
                         else{
                             System.out.println("");
@@ -576,22 +871,72 @@ public class Models{
                         menu();
                     break;
                     case 4:
-                        System.out.print("\r\n");
                         //DEFINIR DADOS
-                        int cpfDigitadoDelete;
-
+                        System.out.print("\r\n");
+                        long cpfDigitadoDelete;
+                        boolean sucessoDelete = false;
+                        Relatorio relatoriosDelete;
+        
                         //menu
                         System.out.println("");
                         System.out.println("DIGITE O CPF DO PACIENTE:");
-                        cpfDigitadoDelete = ler.nextInt();
+                        cpfDigitadoDelete = ler.nextLong();
                         System.out.println("");
+        
+                        //pegar relatorio do paciente
+                        relatoriosDelete = getRelatorio(cpfDigitadoDelete);
+        
+                        if(relatoriosDelete != null){
+                            //definir dados
+                            int confirmDelete = -1;
 
-                        //chamar metodo de delete
-                        deleteRelatorio(cpfDigitadoDelete);
+                            do{
+                                
+                                System.out.println("");
+                                System.out.println(relatoriosDelete.toString());
+                                System.out.println("");
+                                
+                                System.out.println("ESTE É O USUÁRIO QUE VOCÊ DESEJA DELETAR?");
+                                System.out.println("");
+                                System.out.println("1 - SIM");
+                                System.out.println("2 - NÃO");
+                                System.out.println("");
+                                
+                                System.out.println("Opção:");
+                                confirmDelete = ler.nextInt();
+                                System.out.println("");
 
-                        //chamar menu principal
-                        menu();
+                                if(confirmDelete != 1 && confirmDelete != 2){
+                                    System.out.println("");
+                                    System.out.println("Digite apenas um das opções válidas");
+                                    System.out.println("");
+                                }
 
+                            }while(confirmDelete != 1 && confirmDelete != 2);
+
+                            //testar se o usuario realemnte deseja deletar o usuario
+                            if(confirmDelete == 1){
+
+                                sucessoDelete = deleteRelatorio(cpfDigitadoDelete);
+
+                                //Testar se o usuário foi deletado com sucesso
+                                if(sucessoDelete){
+                                    System.out.println("");
+                                    System.out.println("USUÁRIO DELETADO COM SUCESSO");
+                                    System.out.println("");
+                                }
+                                else{
+                                    System.out.println("");
+                                    System.out.println("NÃO FOI POSSÍVEL DELETAR O USUÁRIO");
+                                    System.out.println("");
+                                }
+                            }
+                        }
+                        else{
+                            System.out.println("");
+                            System.out.println("CPF NÃO REGISTRADO");
+                            System.out.println("");
+                        }
                     break;
                     case 5:
                         System.out.print("\r\n");
@@ -613,8 +958,6 @@ public class Models{
                 }
 
             }while(sairG == false);
-
-        
 
     }
     public static void main(String[] args){
