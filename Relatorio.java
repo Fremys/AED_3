@@ -162,7 +162,6 @@ public class Relatorio{
     public void frontByteArray(byte[] data) throws IOException {
 
         //criar vetor que armazena bytes
-
         ByteArrayInputStream bais = new ByteArrayInputStream(data);
 
         //definir conversor de bytes em dados primitivos;
