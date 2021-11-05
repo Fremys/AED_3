@@ -15,20 +15,19 @@ import java.util.Date;
 
 import java.text.DateFormat;
 
-public class bucket {
+public class Bucket {
     //Definições dos dados principais
-
     private long chave;
     private long endereco;
 
     //============ MÉTODOS CONSTRUTORES ============
     
-    public bucket() {
+    public Bucket() {
         this.chave = -1;
         this.endereco = -1;
     }
 
-    public bucket(long chave, long endereco) {
+    public Bucket(long chave, long endereco) {
         this.chave = chave;
         this.endereco = endereco;
     }
