@@ -134,6 +134,7 @@ public class Hash {
                 fis.close();
                 
             }catch (Exception e){
+                System.out.println("Primeira vez");
             }
 
             //=========================================== FIM DO EXECUTAR PELA PRIMEIRA VEZ ===========================================
@@ -154,20 +155,22 @@ public class Hash {
             if(existeIdInicial == false)
             {
                 arq.writeInt(0);
+                arq.writeInt(0);
             }
-
+            
             //Calcular o hash da função
             long pos = funHash(cpf, ( (int) Math.round(Math.pow(2, profundiadeGlobal)) ) );
 
-            long posCalculada = 4 + ((pos - 1) * 8);
+            long posCalculada = 4 + ((pos) * 8);
 
             //posicionar o ponteiro no lugar adequado
             arq.seek(posCalculada);
 
+            System.out.println("Ender Hash: "+ enderHash);
+
             //Ler endereço apontado
-
-            long insertHash = insertHash(cpf, ender, enderHash);
-
+            boolean fun = insertHash(cpf, ender, enderHash);
+            sucesso = !sucesso && fun;
 
 
             //posicionar
@@ -176,9 +179,9 @@ public class Hash {
            // bytes = relatorio.toByteArray();
             
             //Salvar na variável o tamanho do array
-            int tamanho = bytes.length;
+            // int tamanho = bytes.length;
             
-
+            arq.close();
 
         }catch (Exception e){
             sucesso = false;
@@ -186,11 +189,58 @@ public class Hash {
 
     }
 
+    //Método para aumentar o arquivo do diretório
+    public boolean aumentarDiret(long chaveColidida, long newEnder){
+
+        try{
+
+            //Definir variável para escrita e leitura aleatoria
+            arq = new RandomAccessFile("./Diretorio.db", "rw");
+
+            //salvar ponteiro no começo do arquivo
+            long p1 = arq.getFilePointer();
+
+            //Ler profundidade salva
+            int oldTamanho = arq.readInt(); 
+
+            //Copiar valores
+            int newTamanho = ( (int) Math.pow(2, profundiadeGlobal) );
+
+            //criar vetor para armazenar as copias
+            long cop[] = new long[oldTamanho];
+
+            for(int i = 0; i < oldTamanho; i++){
+                cop[i] = arq.readLong();
+            }
+
+
+            for(int i = 0; i < (newTamanho - oldTamanho); i++){
+                arq.seek(arq.length());
+                if(cop[i] == chaveColidida){
+                    arq.writeLong(newEnder);
+                }
+                arq.writeLong(cop[i]);
+            }
+            
+            arq.seek(p1);
+
+            //Escrever profundidade do arquivo
+            arq.writeInt(profundiadeGlobal);
+
+        }catch (Exception e){
+        }
+
+        return false;
+    };
+
     //Método de inserção de relatorios
-    public long insertHash(long cpf, long ender, long enderApotadoDir){
+    public boolean insertHash(long cpf, long ender, long enderApotadoDir){
 
         //criar uma classe para salvar o bucket
         Bucket bucket = new Bucket(cpf, ender);
+
+        //Salvar posição do indice no bucket
+        long bucketPos = -1;
 
         //Definir estado da operação
         boolean sucesso = false;
@@ -247,13 +297,6 @@ public class Hash {
             //salvar endereço inicial do arquivos
             long p1 = arq.getFilePointer();
 
-            
-            /*
-            //posicionar o ponteiro no final do arquivo]
-            long posFinalBucket = ;
-            arq.seek(tamArq);
-            */
-            
             //============ FIM DAS DEFINIÇÕES ==============
             
             //Salvar a classe em um array dinâmico
@@ -262,7 +305,6 @@ public class Hash {
             //salvar em variável o tamanho do arquivo final
             long tamArq = arq.length();
 
-            
             EnderHash = tamArq;
             
             //Salvar na variável o tamanho do array
@@ -280,24 +322,43 @@ public class Hash {
             
             if(quantidadeBucket < quantMax)
             {
-                //Posicionar o ponteiro no lugar desejado para o início da leitura
-                arq.seek( (enderApotadoDir) + 8);
-
                 //calcular posição de escrita dentro do bucket
                 long posDeEscrita = (8 + (quantidadeBucket * tamanhoBucket) );
 
+                System.out.println("quantidadeBucket: " + quantidadeBucket);
+                System.out.println("tamanhoBucket: " + tamanhoBucket);
+                
                 //Posicionar o ponteiro no lugar calculado
                 arq.seek(posDeEscrita);
-
+                
                 //escrever bucket no arquivo
                 arq.write(bytes);
+                
+                //aumentar a variável de quantidade
+                quantidadeBucket = quantidadeBucket + 1;
+                arq.seek(4);
+                arq.writeInt(quantidadeBucket);
 
-                return -1;
+                sucesso = true;
+
+                return sucesso;
             }
             else
-            {
+            {   
+                //====== Preparação do primeiro arquivo ===========
+
+                //Endereço inicial de cada bucket
+                long EnderOrigin = enderApotadoDir;
+                long EnderOriginEscrita = EnderOrigin + 8;
+
+                //========= Preparação do segundo arquivo ===========
+                long EnderNewEnder = tamArq;
+                long varPosEcritaNewBucket;
+
                 //Posicionar o ponteiro no final do arquivo
                 arq.seek(tamArq);
+
+                bucketPos = tamArq;
 
                 //Aumentar a profundidade global
                 profundiadeGlobal = profundiadeGlobal + 1;
@@ -312,13 +373,64 @@ public class Hash {
                 //Criar bucket Vazio
                 arq.write(newBucket(tamanhoBucket));
 
-                //Arq 
+                //============ Fim da preparação ================
 
-                //Caso o bucket esteja cheio
-                bucketCheio = true;
-                profundiadeGlobal = profundiadeGlobal + 1;
-                profundiadeLocal = profundiadeGlobal;
+                //Zerar quantidade
+                long enderEscritaQuantOrigin = EnderOrigin + 4;
+                arq.seek(enderEscritaQuantOrigin);
+                arq.write(0);
 
+                //===============================================
+
+                //Apagar as variáveis escritas
+                arq.seek(EnderOriginEscrita);
+
+                //Criar bucket temporário para edição
+                Bucket bucketEdit = new Bucket();
+
+                for(int i = 0; i < quantMax; i++){
+
+                    //Criar um vetro de bytes para leitura dos arquivos
+                    bytes = new byte[16];
+    
+                    //Ler dados
+                    arq.read(bytes);
+                    
+                    //Salvar na classe auxiliar
+                    bucketEdit.frontByteArray(bytes);
+
+                    //Aumentar o arquivo do diretorio
+                    boolean sucessoAuemnt = aumentarDiret(enderApotadoDir, EnderNewEnder);
+
+                    if(sucessoAuemnt){
+
+                        //Recalcular
+                        diretorio(bucketEdit.getChave(), bucketEdit.getEndereco());
+    
+                        //Chamar a função novamente com ao aumento feito
+                        diretorio(cpf, ender);
+
+                        sucesso = true;
+
+                        System.out.println("Inserido no hash com sucesso");
+                        
+                    }
+                    else{
+                        System.out.println("Erro");
+                    }
+                }
+
+                //definir variável
+
+                // //Salvar posição de escrita do novo bucket
+                // varPosEcritaNewBucket = tamArq + 8;
+
+                // arq.seek(varPosEcritaNewBucket);
+
+                // //escrever bucket no arquivo
+                // arq.write(bytes)
+
+                return sucesso;
 
             }
 

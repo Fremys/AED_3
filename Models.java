@@ -40,6 +40,9 @@ public class Models{
     protected byte[] bytes;
     protected byte[] bytesLixo;
 
+    //Definir função hash
+    Hash hash = new Hash();
+
     
     public Models(){
         
@@ -72,6 +75,7 @@ public class Models{
             //criar uma nova classe de Relatório
             
             Relatorio relatorio = new Relatorio(cpf, nome, dataNascimento, sexo, anotation);
+            Hash hash = new Hash();
             
             //definir variável para escrita aleatoria
             arq = new RandomAccessFile("./Relatorios.db", "rw");
@@ -146,12 +150,15 @@ public class Models{
                 //voltar com o ponteiro para o começo do arquivo
                 arq.seek(p1);
     
-                //escrever non começo do arquivo o ultimo id escrito
+                //escrever no começo do arquivo o ultimo id escrito
                 arq.writeLong((idUltimo + 1));
             }
 
             //fechar arquivo
             arq.close();
+
+            //inserir na tabela hash
+            hash.diretorio(cpf, tamArq);
             
             //return
             return true;
@@ -298,7 +305,6 @@ public class Models{
             //definr classe e variavel auxilixar
             Relatorio aux = new Relatorio();
             byte[] bytesaux;
-
 
             //definir variável para escrita
             arq = new RandomAccessFile("./Relatorios.db", "rw");
