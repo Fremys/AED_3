@@ -41,12 +41,14 @@ public class Hash {
 
     //Definir Array Auxiliar
     protected byte[] bytes;
+    protected byte[] bytess;
     protected byte[] bytesLixo;
 
     //Definir profundidade global
     int profundiadeGlobal = 0;
     int quantMax = 2;
     boolean bucketCheio = false;
+    long enderDirGemeo = -1;
 
     //metodo construtor
     public Hash(){
@@ -92,11 +94,12 @@ public class Hash {
         return lixo; 
     }
     //ARQUIVO AUXILIAR DA TABELA HASH
+    
     public void diretorio(Long cpf, long ender){
 
         //Definir estado da operação
         boolean sucesso = false;
-        long enderHash = 8;
+        long enderHash = 0;
     
 
         //Variaveis de verificações primarias
@@ -167,7 +170,7 @@ public class Hash {
             arq.seek(posCalculada);
 
             //Ler endereço apontado
-            boolean fun = insertHash(cpf, ender, enderHash);
+            boolean fun = insertHash(cpf, ender, enderHash );
             sucesso = !sucesso && fun;
 
 
@@ -199,14 +202,14 @@ public class Hash {
             arq = new RandomAccessFile("./Diretorio.db", "rw");
 
             //salvar ponteiro no começo do arquivo
-            long p1 = arq.getFilePointer();
+            long p1 = 0;
 
             //Ler profundidade salva
             int oldProf = arq.readInt();
-            int oldTamanho = ( (int) Math.pow(2, oldProf) );
+            int oldTamanho = ( (int) Math.round(Math.pow(2, oldProf)) );
 
             //Copiar valores
-            int newTamanho = ( (int) Math.pow(2, profundiadeGlobal) );
+            int newTamanho = ( (int) Math.round(Math.pow(2, profundiadeGlobal)) );
             
             //criar vetor para armazenar as copias
             long cop[] = new long[oldTamanho];
@@ -214,18 +217,16 @@ public class Hash {
             for(int i = 0; i < oldTamanho; i++){
                 cop[i] = arq.readLong();
             }
-
             
+            arq.seek(arq.length());
+
             for(int i = 0; i < (newTamanho - oldTamanho); i++){
-                arq.seek(arq.length());
-                System.out.println("Loop");
-                System.out.println(i);
-                System.out.println("");
+
                 if(cop[i] == chaveColidida){
                     arq.writeLong(newEnder);
+                    enderDirGemeo = newEnder;
                 }
                 else{
-
                     arq.writeLong(cop[i]);
                 }
             }
@@ -235,12 +236,16 @@ public class Hash {
             //Escrever profundidade do arquivo
             arq.writeInt(profundiadeGlobal);
 
+            arq.seek(p1);
+
+            arq.close();
+
             sucesso = true;
 
         }catch (Exception e){
             sucesso = false;
         }
-
+        System.out.println(sucesso);
         return sucesso;
     }
 
@@ -281,20 +286,22 @@ public class Hash {
             
             try{
                 //definir variável para leitura
-                fis = new FileInputStream("./Indice.db");
+                arq = new RandomAccessFile("./Indice.db", "rw");
                 
-                //definir variável auxiliar para leitura
-                dis = new DataInputStream(fis);
+                arq.seek(enderApotadoDir);
+
+                System.out.println("enderApotadoDir 000 "+  enderApotadoDir);
                 
                 //metodo get para conferir se existe um registro com o ultimo id salvo
-                profundiadeLocal = dis.readInt();
-                quantidadeBucket = dis.readInt();
-                
+                profundiadeLocal = arq.readInt();
+                quantidadeBucket = arq.readInt();
+                System.out.println("profundiadeLocal 000 "+  profundiadeLocal);
+                System.out.println("quantidadeBucket 000 "+  quantidadeBucket);
                 //confirmar a existencia 
                 existeIdInicial = true;
                 
                 //fechar arquivo
-                fis.close();
+                arq.close();
                 
             }catch (Exception e){
             }
@@ -323,16 +330,12 @@ public class Hash {
                 arq.writeInt(0);
                 arq.write(newBucket(tamanhoBucket));
             }
-            
-            //salvar em variável o tamanho do arquivo final
-            long tamArq = arq.length();
 
-            EnderHash = tamArq;
-
-            System.out.println("Antes Local = " + profundiadeGlobal);
-            System.out.println("Antes Global = " + profundiadeLocal);
+            System.out.println("Antes Global = " + profundiadeGlobal);
+            System.out.println("Antes local = " + profundiadeLocal);
             System.out.println("quantidade de bucket = " + quantidadeBucket);
             System.out.println("quantidade max = " + quantMax);
+            System.out.println("Tamanho do bucket  = " + tamanhoBucket);
 
             
             //Verificar se o bucket esta cheio
@@ -360,88 +363,176 @@ public class Hash {
                 return sucesso;
             }
             else
-            {   
-                System.out.println("entrou onde deveria");
-                //====== Preparação do primeiro arquivo ===========
+            {
+                if(profundiadeLocal == profundiadeGlobal && (enderDirGemeo != -1 && enderDirGemeo != enderApotadoDir))
+                {   //definição de dados
+                    int profundiadeLocalAux = 0;
+                    int quantidadeBucketAux = 0;
+                    boolean existeIdInicialAux = false;
 
-                //Endereço inicial de cada bucket
-                long EnderOrigin = enderApotadoDir;
-                long EnderOriginEscrita = EnderOrigin + 8;
-
-                //========= Preparação do segundo arquivo ===========
-                long EnderNewEnder = tamArq;
-                long varPosEcritaNewBucket;
-
-                //Posicionar o ponteiro no final do arquivo
-                arq.seek(tamArq);
-
-                bucketPos = tamArq;
-
-                //Aumentar a profundidade global
-                profundiadeGlobal = profundiadeGlobal + 1;
-
-                //Igualar a profundidade global
-                profundiadeLocal = profundiadeGlobal;
-
-                //Escrever profundidade e quantidade
-                arq.writeInt(profundiadeLocal);
-                arq.writeInt(0);
-
-                //Criar bucket Vazio
-                arq.write(newBucket(tamanhoBucket));
-
-                //============ Fim da preparação ================
-
-                //Zerar quantidade e atualizar profundidade
-                arq.seek(EnderOrigin);
-                arq.write(profundiadeLocal);
-                arq.write(0);
-
-                //===============================================
-            
-                //Apagar as variáveis escritas
-                arq.seek(EnderOriginEscrita);
-
-                //Criar bucket temporário para edição
-                Bucket bucketEdit = new Bucket();
-
-                System.out.println("Local = " + profundiadeGlobal);
-                System.out.println("Global = " + profundiadeLocal);
-
-                //Aumentar o arquivo do diretorio
-                boolean sucessoAuemnt = aumentarDiret(enderApotadoDir, EnderNewEnder);
-
-                for(int i = 0; i < quantMax; i++){
-
-                    //Criar um vetro de bytes para leitura dos arquivos
-                    bytes = new byte[16];
-    
-                    //Ler dados
-                    arq.read(bytes);
+                    //Posiscionar o arquivo em um novo loval
+                    arq.seek(enderDirGemeo);
                     
-                    //Salvar na classe auxiliar
-                    bucketEdit.frontByteArray(bytes);
-
-                    if(sucessoAuemnt){
-
-                        //Recalcular
-                        diretorio(bucketEdit.getChave(), bucketEdit.getEndereco());
-    
-                        //Chamar a função novamente com ao aumento feito
-                        diretorio(cpf, ender);
-
-                        sucesso = true;
-
-                        System.out.println("Inserido no hash com sucesso");
+                    try{
                         
+                        //metodo get para conferir se existe um registro com o ultimo id salvo
+                        profundiadeLocalAux = arq.readInt();
+                        quantidadeBucketAux = arq.readInt();
+                        System.out.println("profundiadeLocal 000 "+  profundiadeLocal);
+                        System.out.println("quantidadeBucket 000 "+  quantidadeBucket);
+                        //confirmar a existencia 
+                        existeIdInicialAux = true;
+                        
+                        //fechar arquivo
+                        arq.close();
+                        
+                    }catch (Exception e){
                     }
-                    else{
-                        System.out.println("Erro");
+
+                    if(existeIdInicialAux == false)
+                    {
+                        arq.seek(enderDirGemeo);
+                        arq.writeInt(profundiadeLocalAux);
+                        arq.writeInt(quantidadeBucketAux);
                     }
+
+                    //calcular posição de escrita dentro do bucket
+                    long posDeEscrita = (8 + (quantidadeBucketAux * tamanhoBucket) );
+
+                    arq.seek(posDeEscrita);
+                    System.out.println("NOVIDADES EM BREVEEEEEEEEEEEEEEEEEEE");
+                    
+                    //escrever bucket no arquivo
+                    arq.write(bytes);
+                    
+                    //aumentar a variável de quantidade
+                    quantidadeBucketAux = quantidadeBucketAux + 1;
+                    arq.seek(4);
+                    arq.writeInt(quantidadeBucketAux);
+
+                    sucesso = true;
                 }
+                else{
 
+                    System.out.println("entrou onde deveria");
+                    
+                    //salvar em variável o tamanho do arquivo final
+                    long tamArq = arq.length();
+                    
+                    EnderHash = tamArq;
+
+                    //====== Preparação do primeiro arquivo ===========
+
+                    //Endereço inicial de cada bucket
+                    long EnderOrigin = enderApotadoDir;
+                    long EnderOriginEscrita = EnderOrigin + 8;
+                    
+                    //========= Preparação do segundo arquivo ===========
+                    
+                    long EnderNewEnder = tamArq;
+                    long varPosEcritaNewBucket;
+                    
+                    //Aumentar a profundidade global
+                    profundiadeGlobal = profundiadeGlobal + 1;
+                    
+                    //Igualar a profundidade global
+                    profundiadeLocal = profundiadeGlobal;
+                    
+                    
+                    //Posicionar o ponteiro no final do arquivo
+                    arq.seek(tamArq);
+
+                    //Escrever profundidade e quantidade
+                    arq.writeInt(profundiadeLocal);
+                    arq.writeInt(0);
+                    //Criar bucket Vazio
+                    arq.write(newBucket(tamanhoBucket));
+                    
+                    //============ Fim da preparação ================
+                    
+                    //Zerar quantidade e atualizar profundidade
+                    System.out.println("enderOrigin = "+ EnderOrigin);
+                    arq.seek(EnderOrigin);
+                    arq.write(profundiadeLocal);
+                    arq.write(0);
+                    
+                    //===============================================
+                    
+                    //Apagar as variáveis escritas
+                    arq.seek(EnderOriginEscrita);
+
+                    //Criar bucket temporário para edição
+                    Bucket bucketEdit = new Bucket();
+                    
+                    System.out.println("Global = " + profundiadeGlobal);
+                    System.out.println("Local = " + profundiadeLocal);
+                    
+                    //Aumentar o arquivo do diretorio
+                    System.out.println("Bollean flop banido 1 ");
+                    arq.close();
+                    boolean sucessoAuemnt = aumentarDiret(enderApotadoDir, EnderNewEnder);
+                    System.out.println("Bollean flop banido 2 " + sucessoAuemnt);
+                    System.out.println("Bollean " + sucessoAuemnt);
+                    
+                    
+                    for(int i = 0; i < quantMax; i++){
+                        
+                        arq = new RandomAccessFile("./Indice.db", "rw");
+                        arq.seek(enderApotadoDir);
+                        int f = arq.readInt();
+                        int f2 = arq.readInt();
+                        System.out.println(f + " oi " +f2);
+                        arq.seek(EnderOriginEscrita);
+                        System.out.println("Entrou no for ");
+                        System.out.println(i);
+                        
+                        
+                        //Criar um vetor de bytes para leitura dos arquivos
+                        bytess = new byte[16];
+                        
+                        System.out.println("criou bytes");
+                        
+                        System.out.println("Não leu arq");
+                        
+                        //Ler dados
+                        arq.read(bytess);
+                        
+                        System.out.println("leu arq");
+                        
+                        //Salvar na classe auxiliar
+                        bucketEdit.frontByteArray(bytess);
+                        
+                        System.out.println("quantMax " + quantMax);
+
+                        if(sucessoAuemnt){
+                            
+                            System.out.println("");
+                            System.out.println("");
+                            
+                            System.out.println("PRIMEIRO");
+                            
+                            arq.close();
+                            System.out.println("Global = " + profundiadeLocal);
+                            //Recalcular
+                            diretorio(bucketEdit.getChave(), bucketEdit.getEndereco());
+                            
+                            System.out.println("SEGUNDO");
+                            
+                            //Chamar a função novamente com ao aumento feito
+                            diretorio(cpf, ender);
+                            
+                            sucesso = true;
+                        }
+                            
+                            enderDirGemeo = -1;
+                            
+                            System.out.println("Inserido no hash com sucesso");
+                            
+                        }
+                    }
+                
                 //definir variável
-
+                
                 // //Salvar posição de escrita do novo bucket
                 // varPosEcritaNewBucket = tamArq + 8;
 

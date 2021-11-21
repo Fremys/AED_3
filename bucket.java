@@ -38,7 +38,8 @@ public class Bucket {
         this.chave = chave;
     }
 
-    public void setEndereco(long endereco) {
+    public void setEndereco(long endereco) 
+    {
         this.endereco = endereco;
     }
 
