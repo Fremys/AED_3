@@ -111,18 +111,20 @@ public class Models{
             //salvar enderço inicial do arquivos
             long p1 = arq.getFilePointer();
 
+            
+            
+            //============ FIM DAS DEFINIÇÕES ==============
+            
+            if(existeIdInicial == false)
+            {
+                arq.writeLong(cpf);
+            }
+            
             //salvar em variável o tamanho do arquivo final
             long tamArq = arq.length();
 
             //posicionar o ponteiro no final do arquivo
             arq.seek(tamArq);
-
-            //============ FIM DAS DEFINIÇÕES ==============
-
-            if(existeIdInicial == false)
-            {
-                arq.writeLong(cpf);
-            }
 
             //Salvar a classe em um array dinâmico
             bytes = relatorio.toByteArray();
@@ -156,9 +158,9 @@ public class Models{
 
             //fechar arquivo
             arq.close();
-
+            // System.out.println("tamArq: "+ tamArq);
             //inserir na tabela hash
-            hash.diretorio(cpf, tamArq);
+            hash.diretorio(cpf, (tamArq));
             
             //return
             return true;
@@ -171,11 +173,16 @@ public class Models{
 
     //Método de recuperação de arquivos
     public  Relatorio getRelatorio(long cpf){
-
         try{
             //criar uma nova classe de Relatório
 
             Relatorio relatorio = new Relatorio();
+            Hash hash = new Hash();
+
+            long enderEncontrado = -1;
+
+            //Buscar endereço no hash
+            enderEncontrado = hash.getHash(cpf);
 
             //definir variável para escrita
 
@@ -184,35 +191,40 @@ public class Models{
             //pular o ultimo id salvo no ponteiro
             long tmp = arq.readLong();
 
-            //definir variavel de encontro
+            //definir variável de encontro
             boolean encontrou = false;
 
-            //entrar em um looping até encontrar o cpf solicitado
-            do{
+            //Buscar registro no arquivo principal
 
+            if(enderEncontrado >= 0){
+
+                //entrar em um looping até encontrar o cpf solicitado
+                
+                arq.seek(enderEncontrado);
+                
                 //Salvar na variável o tamanho do array
-
                 int tamanho = arq.readInt();
 
                 //Salvar a classe em um array dinâmico
 
                 bytes = new byte[tamanho];
-
+                
                 //salvar os dados em um vetor
-
+                
                 arq.read(bytes);
-
+                
                 //integrar dados salvo a uma Classe
 
                 relatorio.frontByteArray(bytes);
-
+                
                 //verificar busca
-
+                
                 if(cpf == relatorio.getCpf() && cpf != -1){
                     encontrou = true;
                 }
+            
+            }
 
-            }while(encontrou == false);
 
             if(encontrou == true){
                 return relatorio;
@@ -234,6 +246,15 @@ public class Models{
             //criar uma nova classe de Relatório
 
             Relatorio relatorio = new Relatorio();
+            Hash hash = new Hash();
+
+            long enderEncontrado = -1;
+
+            long posDir = -1;
+
+            //Buscar endereço no hash
+            enderEncontrado = hash.deleteHash(cpf);
+            
 
             //definir variável para escrita
 
@@ -245,41 +266,41 @@ public class Models{
             //definir variavel de encontro
             boolean encontrou = false;
 
-            //variavel que salva o ponteiro do arquivo desejado
-            long posArq = -1;
+            //Buscar registro no arquivo principal
 
-            //entrar em um looping até encontrar o cpf solicitado
-            do{
-                //Salvar na variável o tamanho do array
-                int tamanho = arq.readInt();
+            // if(enderEncontrado >= 0){
 
-                //salvar posição do arquivo
-                posArq = arq.getFilePointer();
+            //     arq.seek(enderEncontrado);
+                
+            //     //Salvar na variável o tamanho do array
+            //     int tamanho = arq.readInt();
+                
+            //     //salvar posição do arquivo
+            //     posArq = arq.getFilePointer();
+                
+            //     //Salvar a classe em um array dinâmico
+            //     bytes = new byte[tamanho];
+                
+            //     //salvar os dados em um vetor
+            //     arq.read(bytes);
+                
+            //     //integrar dados salvo a uma Classe
+            //     relatorio.frontByteArray(bytes);
+                
+            //     //verificar busca
+            //     if(cpf == relatorio.getCpf()){
+            //         encontrou = true;
+            //     }
+            // }
 
-                //Salvar a classe em um array dinâmico
-                bytes = new byte[tamanho];
-
-                //salvar os dados em um vetor
-                arq.read(bytes);
-
-                //integrar dados salvo a uma Classe
-                relatorio.frontByteArray(bytes);
-
-                //verificar busca
-                if(cpf == relatorio.getCpf()){
-                    encontrou = true;
-                }
-
-            }while(encontrou == false);
-            
             //verificar se o relatorio existe
-            if(encontrou == true){
-
-                //definir auxiliar de leitura
-                Scanner ler = new Scanner(System.in);
+            if(enderEncontrado >= 0){
 
                 //mover o ponteiro para o arquivo inicial
-                arq.seek(posArq);
+                arq.seek(enderEncontrado);
+
+                //Salvar na variável o tamanho do array
+                int tamanho = arq.readInt();
 
                 //salvar o id como excluído
                 arq.writeLong(-1);

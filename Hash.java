@@ -41,14 +41,17 @@ public class Hash {
 
     //Definir Array Auxiliar
     protected byte[] bytes;
+    protected byte[] bytesAux;
     protected byte[] bytess;
     protected byte[] bytesLixo;
 
     //Definir profundidade global
     int profundiadeGlobal = 0;
+    int profundiadeLocal = 0;
     int quantMax = 2;
     boolean bucketCheio = false;
     long enderDirGemeo = -1;
+    int oldProfundidadeColidida = -1;
 
     //metodo construtor
     public Hash(){
@@ -63,7 +66,7 @@ public class Hash {
     }
 
     //FUNÇÃO DE DISPERSÃO
-    public long funHash(long cpf, int div)
+    public static long funHash(long cpf, int div)
     {
 
         long n;
@@ -78,6 +81,10 @@ public class Hash {
             BigInteger b1 = new BigInteger( 1 , m.digest());
     
             long longValueOfb1 = b1.longValue();
+
+            if(longValueOfb1 < 0){
+                longValueOfb1 = longValueOfb1 * -1;
+            }
     
             n = longValueOfb1 % div;
     
@@ -86,6 +93,7 @@ public class Hash {
         }
     
         return n;
+    
     }
     
     //FUNÇÃO PARA CRIAR UM BUCKET VAZIO
@@ -126,10 +134,9 @@ public class Hash {
                 
                 //definir variável auxiliar para leitura
                 dis = new DataInputStream(fis);
-                
+
                 //metodo get para conferir se existe um registro com o ultimo id salvo
                 profundiadeGlobal = dis.readInt();
-                enderHash = dis.readLong();
                 
                 //confirmar a existencia 
                 existeIdInicial = true;
@@ -144,7 +151,7 @@ public class Hash {
 
             //============= DEFINÇOES ===================
             
-            //definir variável para escrita e leitura aleatoria
+            //definir variável para escrita para leitura aleatoria
             arq = new RandomAccessFile("./Diretorio.db", "rw");
 
             //salvar endereço inicial do arquivos
@@ -164,15 +171,29 @@ public class Hash {
             //Calcular o hash da função
             long pos = funHash(cpf, ( (int) Math.round(Math.pow(2, profundiadeGlobal)) ) );
 
+            // System.out.println("");
+            // System.out.println("profundiadeGlobal = " + profundiadeGlobal);
+            // System.out.println("CPF = " + cpf);
+            // System.out.println("fun = " + ( (int) Math.round(Math.pow(2, profundiadeGlobal)) ));
+            // System.out.println("pos = " + pos);
+
             long posCalculada = 4 + ((pos) * 8);
 
+            // System.out.println("posCalculada = " + posCalculada);
+            
             //posicionar o ponteiro no lugar adequado
             arq.seek(posCalculada);
+            
+            enderHash = arq.readLong();
+            
+            // System.out.println("enderHash = " + enderHash);
+            // System.out.println("=========================");
 
             //Ler endereço apontado
             boolean fun = insertHash(cpf, ender, enderHash );
             sucesso = !sucesso && fun;
 
+            //posicionar o ponteiro para salvar o endereço do hash
 
             //posicionar
             
@@ -214,22 +235,27 @@ public class Hash {
             //criar vetor para armazenar as copias
             long cop[] = new long[oldTamanho];
 
+            arq.seek(4);
             for(int i = 0; i < oldTamanho; i++){
                 cop[i] = arq.readLong();
             }
             
             arq.seek(arq.length());
 
-            for(int i = 0; i < (newTamanho - oldTamanho); i++){
+            for(int i = 0; i < (oldTamanho); i++){
 
                 if(cop[i] == chaveColidida){
+                    //System.out.println(newEnder);
                     arq.writeLong(newEnder);
-                    enderDirGemeo = newEnder;
+                    //enderDirGemeo = newEnder;
                 }
                 else{
+                    //System.out.println(cop[i]);
                     arq.writeLong(cop[i]);
                 }
+
             }
+            //System.out.println("");
             
             arq.seek(p1);
 
@@ -245,313 +271,480 @@ public class Hash {
         }catch (Exception e){
             sucesso = false;
         }
-        System.out.println(sucesso);
         return sucesso;
     }
 
-    //Método de inserção de relatorios
-    public boolean insertHash(long cpf, long ender, long enderApotadoDir){ 
-
-        //criar uma classe para salvar o bucket
+    //Método de inserção de relatórios
+    public boolean insertHash(long cpf, long ender, long enderApotadoDir){
+        
+        //Definir dados
         Bucket bucket = new Bucket(cpf, ender);
 
-        //Salvar posição do indice no bucket
-        long bucketPos = -1;
+        int profLocal = 0;
+        int quantidade = 0;
+        long enderProxBucket = 0;
 
-        //Definir estado da operação
+        boolean inicial = false;
+
         boolean sucesso = false;
 
-        //Variaveis de verificações primarias
 
-        int profundiadeLocal = 0;
-        int quantidadeBucket = 0;
-        boolean existeIdInicial = false;
-
-        long EnderHash = 0;
-
-        /*
-        =========================================== EXECUTAR PELA PRIMEIRA VEZ ====================================
-        * Essa parte do código verifica se há um arquivo binário criado em disco antes de realizar qualquer operação
-        * Caso exista, ele executa o insert na tabela hash normalmente, porém caso não exista ele cria o arquivo.
-
-        */      
-        
         try{
 
-            //Definir variável para escrita e leitura aleatoria
-            arq = new RandomAccessFile("./Indice.db", "rw");
-
-            //Fechar arquivo
+            //Abrir arquivo para sua criação
+            arq = new RandomAccessFile("./Bucket.db", "rw");
             arq.close();
-            
+
+            //Tentar ler dados iniciais
             try{
-                //definir variável para leitura
-                arq = new RandomAccessFile("./Indice.db", "rw");
-                
+                arq = new RandomAccessFile("./Bucket.db", "rw");
+
+                //posicionar o ponteiro no bucket adequado
                 arq.seek(enderApotadoDir);
 
-                System.out.println("enderApotadoDir 000 "+  enderApotadoDir);
+                //Ler dados inciais
+                profLocal = arq.readInt();
+                quantidade = arq.readInt();
+                enderProxBucket = arq.readLong();
+
+                inicial = true;
+
+                arq.close();
+
+            }catch(Exception e){
+            }
+
+            //Abrir arquivo
+            arq = new RandomAccessFile("./Bucket.db", "rw");
+
+
+            if(inicial == false){
+                arq.writeInt(0);
+                arq.writeInt(0);
+                arq.writeLong(-1);
+                arq.write(newBucket(16));
+            }
+
+            if(quantidade < quantMax && profLocal <= profundiadeGlobal){
+
+                // System.out.println("");
+                // System.out.println("Inseriu");
+                // System.out.println("");
+
+                //calcular a posição do arquivo
+                long pos =  (8 + 8 + (quantidade * 16) ) + enderApotadoDir ;
+
+                arq.seek(pos);
+
+                //System.out.println("Posicao insert = "+ pos);
+
+                bytes = bucket.toByteArray();
                 
-                //metodo get para conferir se existe um registro com o ultimo id salvo
-                profundiadeLocal = arq.readInt();
-                quantidadeBucket = arq.readInt();
-                System.out.println("profundiadeLocal 000 "+  profundiadeLocal);
-                System.out.println("quantidadeBucket 000 "+  quantidadeBucket);
-                //confirmar a existencia 
-                existeIdInicial = true;
+                arq.write(bytes);
+
+                quantidade = quantidade + 1;
+
+                //Recalcular a quantidade
                 
-                //fechar arquivo
+                arq.seek(4 + enderApotadoDir);
+                
+                arq.writeInt(quantidade);
+                
                 arq.close();
                 
-            }catch (Exception e){
-            }
-
-            //=========================================== FIM DO EXECUTAR PELA PRIMEIRA VEZ ===========================================
-
-            //============= DEFINÇOES ===================
-            
-            //definir variável para escrita e leitura aleatoria
-            arq = new RandomAccessFile("./Indice.db", "rw");
-
-            //salvar endereço inicial do arquivos
-            long p1 = arq.getFilePointer();
-
-            //============ FIM DAS DEFINIÇÕES ==============
-            
-            //Salvar a classe em um array dinâmico
-            bytes = bucket.toByteArray();
-
-            //Salvar na variável o tamanho do array
-            int tamanhoBucket = bytes.length;
-            
-            if(existeIdInicial == false)
-            {
-                arq.writeInt(profundiadeGlobal);
-                arq.writeInt(0);
-                arq.write(newBucket(tamanhoBucket));
-            }
-
-            System.out.println("Antes Global = " + profundiadeGlobal);
-            System.out.println("Antes local = " + profundiadeLocal);
-            System.out.println("quantidade de bucket = " + quantidadeBucket);
-            System.out.println("quantidade max = " + quantMax);
-            System.out.println("Tamanho do bucket  = " + tamanhoBucket);
-
-            
-            //Verificar se o bucket esta cheio
-            
-            if(quantidadeBucket < quantMax)
-            {
-                //calcular posição de escrita dentro do bucket
-                long posDeEscrita = (8 + (quantidadeBucket * tamanhoBucket) );
-
-                System.out.println("Não chegou onde deveria");
-                
-                //Posicionar o ponteiro no lugar calculado
-                arq.seek(posDeEscrita);
-                
-                //escrever bucket no arquivo
-                arq.write(bytes);
-                
-                //aumentar a variável de quantidade
-                quantidadeBucket = quantidadeBucket + 1;
-                arq.seek(4);
-                arq.writeInt(quantidadeBucket);
-
                 sucesso = true;
-
-                return sucesso;
+                
             }
-            else
-            {
-                if(profundiadeLocal == profundiadeGlobal && (enderDirGemeo != -1 && enderDirGemeo != enderApotadoDir))
-                {   //definição de dados
-                    int profundiadeLocalAux = 0;
-                    int quantidadeBucketAux = 0;
-                    boolean existeIdInicialAux = false;
+            else{
 
-                    //Posiscionar o arquivo em um novo loval
-                    arq.seek(enderDirGemeo);
+                // if(quantidade == quantMax && profLocal <= profundiadeGlobal && enderProxBucket > 0){
+
+                //     System.out.println("Entrou no novo insert");
+
+                //     //definir dados
+                //     long enderProx2 = -1;
+                //     //calcular a posição do arquivo
+                //     System.out.println("Alo1");
+                //     arq.seek(enderProxBucket);
+
+                //     profLocal = arq.readInt();
+                //     quantidade = arq.readInt();
+                //     System.out.println("Alo3");
+                //     enderProx2 = arq.readLong();
                     
-                    try{
+                //     arq.seek(enderProxBucket + 16 + (quantidade * 16));
+
+                //     System.out.println("Ender calculado: " + enderProxBucket + 16 + (quantidade * 16));
+
+                //     bytes = bucket.toByteArray();
+                
+                //     arq.write(bytes);
+        
+                //     quantidade = quantidade + 1;
+
+                //     //Recalcular a quantidade
+                
+                //     arq.seek(4 + enderProxBucket);
                         
-                        //metodo get para conferir se existe um registro com o ultimo id salvo
-                        profundiadeLocalAux = arq.readInt();
-                        quantidadeBucketAux = arq.readInt();
-                        System.out.println("profundiadeLocal 000 "+  profundiadeLocal);
-                        System.out.println("quantidadeBucket 000 "+  quantidadeBucket);
-                        //confirmar a existencia 
-                        existeIdInicialAux = true;
+                //     arq.writeInt(quantidade);
                         
-                        //fechar arquivo
-                        arq.close();
+                //     arq.close();
                         
-                    }catch (Exception e){
-                    }
+                //     sucesso = true;
 
-                    if(existeIdInicialAux == false)
-                    {
-                        arq.seek(enderDirGemeo);
-                        arq.writeInt(profundiadeLocalAux);
-                        arq.writeInt(quantidadeBucketAux);
-                    }
 
-                    //calcular posição de escrita dentro do bucket
-                    long posDeEscrita = (8 + (quantidadeBucketAux * tamanhoBucket) );
+                // }else
+                // {
 
-                    arq.seek(posDeEscrita);
-                    System.out.println("NOVIDADES EM BREVEEEEEEEEEEEEEEEEEEE");
-                    
-                    //escrever bucket no arquivo
-                    arq.write(bytes);
-                    
-                    //aumentar a variável de quantidade
-                    quantidadeBucketAux = quantidadeBucketAux + 1;
-                    arq.seek(4);
-                    arq.writeInt(quantidadeBucketAux);
-
-                    sucesso = true;
-                }
-                else{
-
-                    System.out.println("entrou onde deveria");
-                    
-                    //salvar em variável o tamanho do arquivo final
-                    long tamArq = arq.length();
-                    
-                    EnderHash = tamArq;
-
-                    //====== Preparação do primeiro arquivo ===========
-
-                    //Endereço inicial de cada bucket
-                    long EnderOrigin = enderApotadoDir;
-                    long EnderOriginEscrita = EnderOrigin + 8;
-                    
-                    //========= Preparação do segundo arquivo ===========
-                    
-                    long EnderNewEnder = tamArq;
-                    long varPosEcritaNewBucket;
-                    
-                    //Aumentar a profundidade global
+                    // System.out.println("");
+                    // System.out.println("Dividiu");
+                    // System.out.println("");
+    
+                    //Definir dados
+                    long newHash = -1;
+                    //PREPARAÇÃO DOS ARQUIVOS
+    
+                    //Igualar profundidades
                     profundiadeGlobal = profundiadeGlobal + 1;
-                    
-                    //Igualar a profundidade global
-                    profundiadeLocal = profundiadeGlobal;
-                    
-                    
-                    //Posicionar o ponteiro no final do arquivo
-                    arq.seek(tamArq);
-
-                    //Escrever profundidade e quantidade
-                    arq.writeInt(profundiadeLocal);
+                    profLocal = profundiadeGlobal;
+    
+    
+                    //Arquivo secundário
+                    newHash = arq.length();
+    
+                    arq.seek(newHash);
+                    arq.writeInt(profLocal);
                     arq.writeInt(0);
-                    //Criar bucket Vazio
-                    arq.write(newBucket(tamanhoBucket));
-                    
-                    //============ Fim da preparação ================
-                    
-                    //Zerar quantidade e atualizar profundidade
-                    System.out.println("enderOrigin = "+ EnderOrigin);
-                    arq.seek(EnderOrigin);
-                    arq.write(profundiadeLocal);
-                    arq.write(0);
-                    
-                    //===============================================
-                    
-                    //Apagar as variáveis escritas
-                    arq.seek(EnderOriginEscrita);
-
-                    //Criar bucket temporário para edição
-                    Bucket bucketEdit = new Bucket();
-                    
-                    System.out.println("Global = " + profundiadeGlobal);
-                    System.out.println("Local = " + profundiadeLocal);
-                    
-                    //Aumentar o arquivo do diretorio
-                    System.out.println("Bollean flop banido 1 ");
+                    arq.writeLong(-1);
+                    arq.write(newBucket(16));
+    
+                    //Arquivo primário/original
+                    arq.seek(enderApotadoDir);
+                    arq.writeInt(profLocal);
+                    arq.writeInt(0);
+                    arq.writeLong(newHash);
+                    // System.out.println("enderProxBucket: " + newHash);
+    
                     arq.close();
-                    boolean sucessoAuemnt = aumentarDiret(enderApotadoDir, EnderNewEnder);
-                    System.out.println("Bollean flop banido 2 " + sucessoAuemnt);
-                    System.out.println("Bollean " + sucessoAuemnt);
-                    
-                    
-                    for(int i = 0; i < quantMax; i++){
-                        
-                        arq = new RandomAccessFile("./Indice.db", "rw");
-                        arq.seek(enderApotadoDir);
-                        int f = arq.readInt();
-                        int f2 = arq.readInt();
-                        System.out.println(f + " oi " +f2);
-                        arq.seek(EnderOriginEscrita);
-                        System.out.println("Entrou no for ");
-                        System.out.println(i);
-                        
-                        
-                        //Criar um vetor de bytes para leitura dos arquivos
-                        bytess = new byte[16];
-                        
-                        System.out.println("criou bytes");
-                        
-                        System.out.println("Não leu arq");
-                        
-                        //Ler dados
-                        arq.read(bytess);
-                        
-                        System.out.println("leu arq");
-                        
-                        //Salvar na classe auxiliar
-                        bucketEdit.frontByteArray(bytess);
-                        
-                        System.out.println("quantMax " + quantMax);
-
-                        if(sucessoAuemnt){
-                            
-                            System.out.println("");
-                            System.out.println("");
-                            
-                            System.out.println("PRIMEIRO");
-                            
+                    //Aumentar diretório
+                    boolean sucessAuemnt = aumentarDiret(enderApotadoDir, newHash);
+    
+                    if(sucessAuemnt)
+                    {
+                        Bucket bucketAux = new Bucket();
+    
+                        long position = enderApotadoDir + 8 + 8;
+    
+                        for(int i=0; i< quantMax; i++){
+    
+                            arq = new RandomAccessFile("./Bucket.db", "rw");
+    
+                            arq.seek(position);
+    
+                            bytesAux = new byte[16];
+    
+                            arq.read(bytesAux);
+    
+                            bucketAux.frontByteArray(bytesAux);
+    
                             arq.close();
-                            System.out.println("Global = " + profundiadeLocal);
-                            //Recalcular
-                            diretorio(bucketEdit.getChave(), bucketEdit.getEndereco());
-                            
-                            System.out.println("SEGUNDO");
-                            
-                            //Chamar a função novamente com ao aumento feito
-                            diretorio(cpf, ender);
-                            
+    
+                            position = position + 16;
+    
+                            diretorio(bucketAux.getChave(), bucketAux.getEndereco());
+    
+    
                             sucesso = true;
                         }
-                            
-                            enderDirGemeo = -1;
-                            
-                            System.out.println("Inserido no hash com sucesso");
-                            
-                        }
+
+                        diretorio(cpf, ender);
                     }
-                
-                //definir variável
-                
-                // //Salvar posição de escrita do novo bucket
-                // varPosEcritaNewBucket = tamArq + 8;
+                    else
+                    {
+                        System.out.println("Error");
+                        sucesso = false;
+                    }
+                //}
 
-                // arq.seek(varPosEcritaNewBucket);
-
-                // //escrever bucket no arquivo
-                // arq.write(bytes)
-
-                return sucesso;
 
             }
 
 
-            
         }catch (Exception e){
-            sucesso = false;
+
         }
-            
+
         return sucesso;
     }
+
+    //método de busca de relatórios
+    public long getHash(Long cpf){
+
+        //Definir dados diretorio
+        long enderBucket = -1;
+        long pos = -1;
+        long posHash = -1;
+
+        //Definir dados Bucket
+        int profLocal = -1;
+        int quantidade = -1;
+        long enderProxBucket = -1;
+
+        //endereço no arquivo principal
+        long enderEncontrado = -1;
+
+        boolean econtrou = false;
+
+        try{
+
+            //Abrir diretorio
+            arq = new RandomAccessFile("./Diretorio.db", "rw");
+
+            //Ler profundidade e endereço
+            profundiadeGlobal = arq.readInt();
+            
+            if(profundiadeGlobal >= 0)
+            {
+                //Receber valor da função hash
+                pos = (funHash(cpf, ( (int) Math.round(Math.pow(2, profundiadeGlobal)) )));
+            }
+
+            if(pos >= 0)
+            {
+                posHash = 4 + ((pos) * 8);
+                arq.seek(posHash);
+                enderBucket = arq.readLong();
+            }
+
+            // System.out.println("pos: "+ pos);
+            // System.out.println("posHashos: "+ posHash);
+
+
+
+
+            arq.close();
+
+            
+            
+            //Procurar registro no bucket
+            if(enderBucket >= 0)
+            {   
+                //abrir buckets
+                arq = new RandomAccessFile("./Bucket.db", "rw");
+                Bucket bucket = new Bucket();
+                
+                //posicionar no bucket procurado
+                arq.seek(enderBucket);
+                
+                //ler dados
+                profLocal = arq.readInt();
+                quantidade = arq.readInt();
+                enderProxBucket = arq.readLong();
+
+                // System.out.println("profLocal: "+ profLocal);
+                // System.out.println("enderProxBucket: "+ enderProxBucket);
+                // System.out.println("quantidade: "+ quantidade);
+                // System.out.println("profundiadeGlobal: "+ profundiadeGlobal);
+                
+                for(int i = 0; i < quantidade; i++)
+                {
+                    bytesAux = new byte[16];
+
+                    arq.read(bytesAux);
+
+                    bucket.frontByteArray(bytesAux);
+
+                    // System.out.println("chave: "+ bucket.getChave());
+
+                    if(bucket.getChave() != -1 && bucket.getChave() == cpf)
+                    {
+                        // System.out.println("Encontrou");
+                        enderEncontrado = bucket.getEndereco();
+                        i = quantidade;
+                        econtrou = true;
+                    }
+                }
+
+                // if(!econtrou)
+                // {
+                //     arq.seek(enderProxBucket);
+
+                //     //ler dados
+                //     profLocal = arq.readInt();
+                //     quantidade = arq.readInt();
+                //     enderProxBucket = arq.readLong();
+
+                //     for(int i = 0; i < quantidade; i++)
+                //     {
+                //         bytesAux = new byte[16];
+
+                //         arq.read(bytesAux);
+
+                //         bucket.frontByteArray(bytesAux);
+
+                //         System.out.println("chave: "+ bucket.getChave());
+
+                //         if(bucket.getChave() != -1 && bucket.getChave() == cpf)
+                //         {
+                //             System.out.println("Encontrou");
+                //             enderEncontrado = bucket.getEndereco();
+                //             i = quantidade;
+                //             econtrou = true;
+                //         }
+                //     }
+
+                // }
+
+                arq.close();
+            }
+
+        }catch(Exception e){
+        }
+
+        // System.out.println("enderEncontrado = " + enderEncontrado);
+        return enderEncontrado;
+    }
+
+    //método para deletar de relatórios
+    public long deleteHash(Long cpf){
+        
+        //Definir dados diretorio
+        long enderBucket = -1;
+        long pos = -1;
+        long posHash = -1;
+        
+        //Definir dados Bucket
+        int profLocal = -1;
+        int quantidade = -1;
+        long enderProxBucket = -1;
+        
+        boolean sucesso = false;
+        boolean encontrou = false;
+        long enderEncontrado = -1;
+ 
+         try{
+ 
+            //Abrir diretorio
+            arq = new RandomAccessFile("./Diretorio.db", "rw");
+ 
+            //Ler profundidade e endereço
+            profundiadeGlobal = arq.readInt();
+             
+            if(profundiadeGlobal >= 0)
+            {
+                //Receber valor da função hash
+                pos = (funHash(cpf, ( (int) Math.round(Math.pow(2, profundiadeGlobal)) )));
+            }
+ 
+            if(pos >= 0)
+            {
+                posHash = 4 + ((pos) * 8);
+                arq.seek(posHash);
+                enderBucket = arq.readLong();
+            }
+ 
+            arq.close();
+ 
+             
+             
+            //Procurar registro no bucket
+            if(enderBucket >= 0)
+            {   
+                //abrir buckets
+                arq = new RandomAccessFile("./Bucket.db", "rw");
+                Bucket bucket = new Bucket();
+                 
+                //posicionar no bucket procurado
+                arq.seek(enderBucket);
+                 
+                //ler dados
+                profLocal = arq.readInt();
+                quantidade = arq.readInt();
+                enderProxBucket = arq.readLong();
+ 
+                 
+                for(int i = 0; i < quantidade; i++)
+                {
+                    bytesAux = new byte[16];
+
+                    long b1 = arq.getFilePointer();
+ 
+                    arq.read(bytesAux);
+ 
+                    bucket.frontByteArray(bytesAux);
+ 
+                    // System.out.println("chave: "+ bucket.getChave());
+ 
+                    if(bucket.getChave() != -1 && bucket.getChave() == cpf)
+                    {
+                        // System.out.println("Encontrou");
+                        //atualizar variável de controle
+                        i = quantidade;
+
+                        //deletar chave encontrada
+                        bucket.setChave(-1);
+                        enderEncontrado = bucket.getEndereco();
+
+                        //ir para o início do arquivo para salvar o processo
+                        arq.seek(b1);
+                        bytes = bucket.toByteArray();
+                        arq.write(bytes);
+
+                        encontrou = true;
+                        sucesso = true;
+                    }
+                }
+ 
+                // if(!encontrou)
+                // {
+                //     arq.seek(enderProxBucket);
+ 
+                //     //ler dados
+                //     profLocal = arq.readInt();
+                //     quantidade = arq.readInt();
+                //     enderProxBucket = arq.readLong();
+ 
+                //     for(int i = 0; i < quantidade; i++)
+                //     {
+                //         bytesAux = new byte[16];
+
+                //         long b1 = arq.getFilePointer();
+ 
+                //         arq.read(bytesAux);
+ 
+                //         bucket.frontByteArray(bytesAux);
+ 
+                //         // System.out.println("chave: "+ bucket.getChave());
+ 
+                //         if(bucket.getChave() != -1 && bucket.getChave() == cpf)
+                //         {
+                //             // System.out.println("Encontrou");
+                //             i = quantidade;
+                //             //deletar chave encontrada
+                //             bucket.setChave(-1);
+                //             enderEncontrado = bucket.getEndereco();
+
+                //             //ir para o início do arquivo para salvar o processo
+                //             arq.seek(b1);
+                //             bytes = bucket.toByteArray();
+                //             arq.write(bytes);
+
+                //             sucesso = true;
+                //         }
+                //     }
+ 
+                // }
+ 
+                arq.close();
+            }
+ 
+        }catch(Exception e){
+        }
+
+        return enderEncontrado;
+    }
+
+
 }
+
     
