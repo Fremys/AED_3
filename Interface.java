@@ -15,9 +15,240 @@ import java.io.RandomAccessFile;
 
 import java.util.Scanner;
 
+import java.util.Random;
+
 public class Interface {
     //definir classe global
     static Models models = new Models();
+
+    public static void interfaceInsertTest(){
+        System.out.println("------------TESTE EFICIENCIA DOS RELATORIOS--------\n\n\n1 - NUMERO DE CHAVES:\n2 - PROFUNDIDADE GLOBAL:\n3 - NUMERO DE ENTRADAS POR BUCKET:\n4 - TAMANHO ADICONAL DO RESGISTRO:\n5 - MEDIR TEMPO:\n6 - Simulacao 1 Gb:\n6 - SAIR:\n\n\n");
+    }
+
+    //Interface de Inserção para teste
+    public static void insertTeste(){
+
+        interfaceInsertTest();
+
+        //definir auxiliar de leitura
+        Scanner ler = new Scanner(System.in);
+        String cont = "";
+
+        //limpar buffer
+        System.out.println("Aperte" +'"'+ " enter " +'"'+ " para continuar...");
+        cont = ler.nextLine();
+
+        int op = -1;
+        boolean out = false;
+        
+        //DEFINIR VARIÁVEIS USADAS PARA AS INSERÇÕES
+        int k = -1;
+        int p = -1;
+        int n = -1;
+        int m = -1;
+
+        do{
+            System.out.print("Opção:");
+            op = ler.nextInt();
+
+            System.out.print("\r\n");
+
+            switch (op) {
+                
+                case 1:
+                    System.out.println("");
+                    System.out.print("Numero de chaves: "); 
+                    k = ler.nextInt();
+                    System.out.println("");
+                break;
+                case 2:
+                    System.out.println("");
+                    System.out.print("Numero de profundidade: ");
+                    p = ler.nextInt();
+                    System.out.println("");
+
+                break;
+                
+                case 3:
+                    System.out.println("");
+                    System.out.print("Quantidade por Bucket: ");
+                        n = ler.nextInt();
+                    if(p > - 1 && n > -1){
+                        //Criar os Buckets vazios para armazenamento
+                        models.createBuckets(p, n);
+                        System.out.println("Buckets vazios criado com sucesso");
+                        System.out.println("");
+                    }else{
+                        System.out.println("ERRO: Algyum campo não foi preenchido");
+                        System.out.println("");
+                    }
+
+                break;
+
+                case 4:
+                    System.out.println("");
+                    System.out.print("Tamanho arquivo adicional: ");
+                        m = ler.nextInt();
+                    System.out.println("");
+                break;
+                    
+                case 5:
+
+                    //Testar se todos os campos fora preenchidos com sucesso
+                    if(k > -1 && p > -1 && n > -1 && m > -1){
+
+                        //Definir dados
+                        Random random = new Random();
+                        int tamanhoTotalRegistro = 66 + m;
+                        String nome = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+                        String arquivoAdicional = "";
+                        long tempoTotal = 0;
+
+                        //Criar os Buckets vazios para armazenamento
+                        //models.createBuckets(p, n);
+
+
+                        //Preparar arquivo adicional
+                        for(int j = 0; j < m; j++){
+                            arquivoAdicional = arquivoAdicional + "B";
+                        }
+                        
+                        //Realizar as inserções desejadas
+                        for(int i = 0; i < k; i++){
+                            System.out.println("inserindo : "+ i);
+                            long tempoInicial = System.currentTimeMillis();
+
+                            boolean sucesso = models.insertRelatorio(random.nextInt(999999999), nome, "21/02/2002", true, arquivoAdicional, n, tamanhoTotalRegistro);
+                       
+                            tempoTotal = tempoTotal + (System.currentTimeMillis() - tempoInicial);
+                        }  
+                        
+                        System.out.println("Tempo total das Inserções: " + tempoTotal);
+                        System.out.println("");
+                    }
+                    else{
+                        System.out.println("");
+                        System.out.println("ERRO: Algum campo não foi preenchido");
+                        System.out.println("");
+                    }
+                break;
+                case 6:
+
+                if(p > -1 && n > -1 && m > -1){
+                    //Definir dados
+                    Random random = new Random();
+                    long tempoTotal = 0;
+                    int tamanhoTotalRegistro = 66 + m;
+                    long quantidaNecessariaRegistros = 1000000000/tamanhoTotalRegistro;
+                    String nome = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+                    String arquivoAdicional = "";
+
+                    //Preparar arquivo adicional
+                    //models.createBuckets(p, n);
+
+                    //Preparar arquivo adicional
+                    for(long j = 0; j < m; j++){
+                        arquivoAdicional = arquivoAdicional + "B";
+                    }
+                    System.out.println("quantidaNecessariaRegistros: "+quantidaNecessariaRegistros);
+                    //Realizar as inserções desejadas
+                    for(int i = 0; i < quantidaNecessariaRegistros; i++){
+
+                        System.out.println("Inserido: "+i);
+                        long tempoInicial = System.currentTimeMillis();
+                        
+                        boolean sucesso = models.insertRelatorio(random.nextInt(999999999), nome, "21/02/2002", true, arquivoAdicional, n, tamanhoTotalRegistro);
+                        
+                        tempoTotal = tempoTotal + (System.currentTimeMillis() - tempoInicial);
+                    }
+                    System.out.println("Tempo total das Inserções: " + tempoTotal);
+                    System.out.println("Quantidade de arquivos inseridos: " + quantidaNecessariaRegistros);
+                    System.out.println("Tamanho de Cada registro: " + tamanhoTotalRegistro);
+                    System.out.println("");
+
+                }else{
+                    System.out.println("");
+                    System.out.println("ERRO: Algum campo não foi preenchido");
+                    System.out.println("");
+                }
+                break;
+                case 7:
+                out = true;
+                break;
+                
+                default:
+                break;
+                
+            }
+            System.out.println("");
+            interfaceInsertTest();
+            System.out.println("Aperte" +'"'+ " enter " +'"'+ " para continuar...");
+            cont = ler.nextLine();
+            System.out.println("");
+            System.out.println("");
+
+        }while(!out);
+    }
+
+    public static void interfaceTest(){
+        System.out.println("------------RELATORIOS MÉDICOS--------");
+        System.out.println("");
+        System.out.println("");
+        System.out.println("1 - INSERIR RELATÓRIOS");
+        System.out.println("2 - VISULIZAR RELATÓRIO");
+        System.out.println("3 - SAIR");
+        System.out.println("");
+        System.out.println("");
+    }
+
+    //Interface para teste
+    public static void testesEficiencia(){
+
+        interfaceTest();
+
+        //definir auxiliar de leitura
+        Scanner ler = new Scanner(System.in);
+        String cont = "";
+
+        //limpar buffer
+        System.out.println("Aperte" +'"'+ " enter " +'"'+ " para continuar...");
+        cont = ler.nextLine();
+
+        int op = -1;
+        boolean out = false;
+
+        do{
+            System.out.println("Opção:");
+            op = ler.nextInt();
+            System.out.print("\r\n");
+
+
+            switch (op) {
+                
+                case 1:
+                    insertTeste();
+                break;
+                
+                case 2:
+                    System.out.println("Visulizar");
+                break;
+                
+                case 3:
+                    out = true;
+                break;
+                
+                default:
+                break;
+                
+            }
+            interfaceTest();
+            //limpar buffer
+            System.out.println("Aperte" +'"'+ " enter " +'"'+ " para continuar...");
+            cont = ler.nextLine();
+        }while(!out);
+            
+            
+        }
     
     public static void menu(){
         //printar menu
@@ -138,7 +369,7 @@ public class Interface {
                                         System.out.println("INSERIR NOME:");
                                         nome = ler.nextLine();
 
-                                        //testar se o nome do paciente tem mais que 40 caracteres
+                                        //testar se o nome do paciente tem mais que 50 caracteres
                                         if(nome.length() > 50)
                                         {
                                             System.out.println("Nome muito grande, Abrevie!");
@@ -228,7 +459,7 @@ public class Interface {
                                     if(aux == null) {
                                         
                                         //EXECUTAR O METODO DE INSERÇÃO
-                                        boolean sucesso = models.insertRelatorio(cpf, nome, dataNascimento, sexoBol, anotation);
+                                        boolean sucesso = models.insertRelatorio(cpf, nome, dataNascimento, sexoBol, anotation, 2, 3000);
     
                                         //TESTAR SE A OPERAÇÃO FOI BEM SUCEDIDA
                                         if(sucesso){
@@ -480,7 +711,7 @@ public class Interface {
                                             System.out.println("");
                                         break;                         
                                         case 6:
-                                            boolean sucessoInUpdate = models.updateRelatorio(relatorioUpdate);
+                                            boolean sucessoInUpdate = models.updateRelatorio(relatorioUpdate, 3000);
         
                                             //TESTAR SE A OPERAÇÃO FOI BEM SUCEDIDA
                                             if(sucessoInUpdate){
@@ -625,6 +856,6 @@ public class Interface {
 
     public static void main(String[] args){
         //Chamar a interface do sistema
-        interfaces();
+        testesEficiencia();
     }
 }

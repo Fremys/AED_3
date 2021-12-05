@@ -54,13 +54,20 @@ public class Models{
         this.bytes = null;
         this.bytesLixo = null;
     }
+    public void createBuckets(int p, int n){
+        //Definir dados
+        Hash hash = new Hash();
 
+        //Criar Bucket vazios
+        hash.createBucketsVazios(p, n);
+
+    }
 
     //Metodo de inserção de relatórios em arquivo
-    public  boolean insertRelatorio(long cpf, String nome, String dataNascimento, boolean sexo, String anotation){
+    public  boolean insertRelatorio(long cpf, String nome, String dataNascimento, boolean sexo, String anotation, int maxQant, int tam ){
         
         //deifnir tamanho
-        int tamanhoPadrao = 3000;
+        int tamanhoPadrao = tam;
         long idUltimo = 0;
         boolean existeIdInicial = false;
 
@@ -108,7 +115,7 @@ public class Models{
             //definir variável para escrita aleatoria
             arq = new RandomAccessFile("./Relatorios.db", "rw");
 
-            //salvar enderço inicial do arquivos
+            //salvar endereço inicial do arquivos
             long p1 = arq.getFilePointer();
 
             
@@ -160,7 +167,7 @@ public class Models{
             arq.close();
             // System.out.println("tamArq: "+ tamArq);
             //inserir na tabela hash
-            hash.diretorio(cpf, (tamArq));
+            hash.diretorio(cpf, (tamArq), maxQant);
             
             //return
             return true;
@@ -173,6 +180,7 @@ public class Models{
 
     //Método de recuperação de arquivos
     public  Relatorio getRelatorio(long cpf){
+        
         try{
             //criar uma nova classe de Relatório
 
@@ -317,10 +325,10 @@ public class Models{
     }
 
     //Método Update
-    public  boolean updateRelatorio(Relatorio relatorio){
+    public  boolean updateRelatorio(Relatorio relatorio, int tam){
         try{
             //deifnir tamanho
-            int tamanhoPadrao = 3000;
+            int tamanhoPadrao = tam;
 
             //definr classe e variavel auxilixar
             Relatorio aux = new Relatorio();
