@@ -22,7 +22,7 @@ public class Interface {
     static Models models = new Models();
 
     public static void interfaceInsertTest(){
-        System.out.println("------------TESTE EFICIENCIA DOS RELATORIOS--------\n\n\n1 - NUMERO DE CHAVES:\n2 - PROFUNDIDADE GLOBAL:\n3 - NUMERO DE ENTRADAS POR BUCKET:\n4 - TAMANHO ADICONAL DO RESGISTRO:\n5 - MEDIR TEMPO:\n6 - Simulacao 1 Gb:\n6 - SAIR:\n\n\n");
+        System.out.println("------------TESTE EFICIENCIA DOS RELATORIOS--------\n\n\n1 - NUMERO DE CHAVES:\n2 - PROFUNDIDADE GLOBAL:\n3 - NUMERO DE ENTRADAS POR BUCKET:\n4 - TAMANHO ADICONAL DO RESGISTRO:\n5 - MEDIR TEMPO:\n6 - Simulacao 1 Gb:\n7 - Recuperar Dados:\n8 - Sair:\n\n\n");
     }
 
     //Interface de Inserção para teste
@@ -42,7 +42,7 @@ public class Interface {
         boolean out = false;
         
         //DEFINIR VARIÁVEIS USADAS PARA AS INSERÇÕES
-        int k = -1;
+        long k = -1;
         int p = -1;
         int n = -1;
         int m = -1;
@@ -58,7 +58,7 @@ public class Interface {
                 case 1:
                     System.out.println("");
                     System.out.print("Numero de chaves: "); 
-                    k = ler.nextInt();
+                    k = ler.nextLong();
                     System.out.println("");
                 break;
                 case 2:
@@ -117,8 +117,8 @@ public class Interface {
                         for(int i = 0; i < k; i++){
                             System.out.println("inserindo : "+ i);
                             long tempoInicial = System.currentTimeMillis();
-
-                            boolean sucesso = models.insertRelatorio(random.nextInt(999999999), nome, "21/02/2002", true, arquivoAdicional, n, tamanhoTotalRegistro);
+                            //random.nextInt(999999999)
+                            boolean sucesso = models.insertRelatorio(i, nome, "21/02/2002", true, arquivoAdicional, n, tamanhoTotalRegistro);
                        
                             tempoTotal = tempoTotal + (System.currentTimeMillis() - tempoInicial);
                         }  
@@ -142,6 +142,7 @@ public class Interface {
                     long quantidaNecessariaRegistros = 1000000000/tamanhoTotalRegistro;
                     String nome = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
                     String arquivoAdicional = "";
+                    k = quantidaNecessariaRegistros;
 
                     //Preparar arquivo adicional
                     //models.createBuckets(p, n);
@@ -152,12 +153,12 @@ public class Interface {
                     }
                     System.out.println("quantidaNecessariaRegistros: "+quantidaNecessariaRegistros);
                     //Realizar as inserções desejadas
-                    for(int i = 0; i < quantidaNecessariaRegistros; i++){
+                    for(long i = 0; i < quantidaNecessariaRegistros; i++){
 
                         System.out.println("Inserido: "+i);
                         long tempoInicial = System.currentTimeMillis();
                         
-                        boolean sucesso = models.insertRelatorio(random.nextInt(999999999), nome, "21/02/2002", true, arquivoAdicional, n, tamanhoTotalRegistro);
+                        boolean sucesso = models.insertRelatorio(i, nome, "21/02/2002", true, arquivoAdicional, n, tamanhoTotalRegistro);
                         
                         tempoTotal = tempoTotal + (System.currentTimeMillis() - tempoInicial);
                     }
@@ -173,6 +174,31 @@ public class Interface {
                 }
                 break;
                 case 7:
+
+                if(p > -1 && n > -1 && m > -1){
+                    long tempoTotal = 0;
+                    
+                    for(long i = 0; i < k; i++){
+                        
+                        System.out.println("Inserido: "+i);
+                        
+                        long tempoInicial = System.currentTimeMillis();
+                        
+                        Relatorio sucesso = models.getRelatorio(i);
+                        
+                        tempoTotal = tempoTotal + (System.currentTimeMillis() - tempoInicial);
+                    }
+
+                    System.out.println("Tempo total das Recuperações: " + tempoTotal);
+                }
+                else{
+                    System.out.println("");
+                    System.out.println("ERRO: Algum campo não foi preenchido");
+                    System.out.println("");
+                }
+                break;
+
+                case 8:
                 out = true;
                 break;
                 
@@ -194,9 +220,8 @@ public class Interface {
         System.out.println("------------RELATORIOS MÉDICOS--------");
         System.out.println("");
         System.out.println("");
-        System.out.println("1 - INSERIR RELATÓRIOS");
-        System.out.println("2 - VISULIZAR RELATÓRIO");
-        System.out.println("3 - SAIR");
+        System.out.println("1 - Comecar Testes");
+        System.out.println("2 - SAIR");
         System.out.println("");
         System.out.println("");
     }
@@ -228,12 +253,8 @@ public class Interface {
                 case 1:
                     insertTeste();
                 break;
-                
+
                 case 2:
-                    System.out.println("Visulizar");
-                break;
-                
-                case 3:
                     out = true;
                 break;
                 
