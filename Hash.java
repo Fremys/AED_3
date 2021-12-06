@@ -128,10 +128,6 @@ public class Hash {
 
             long posComp = 4;
 
-            System.out.println("Dividiu");
-            System.out.println("Tamanho: " + oldTamanho);
-            System.out.println("chaveColidida: " + chaveColidida);
-
             for(long i = 0; i < oldTamanho; i++){
 
                 arq.seek(posComp);
@@ -149,27 +145,6 @@ public class Hash {
                 //passar para o proximo endereço
                 posComp = posComp + 8;
             }
-
-            // for(int i = 0; i < oldTamanho; i++){
-            //     cop[i] = arq.readLong();
-            // }
-            
-            // arq.seek(arq.length());
-
-            // for(int i = 0; i < (oldTamanho); i++){
-
-            //     if(cop[i] == chaveColidida){
-            //         //System.out.println(newEnder);
-            //         arq.writeLong(newEnder);
-            //         //enderDirGemeo = newEnder;
-            //     }
-            //     else{
-            //         //System.out.println(cop[i]);
-            //         arq.writeLong(cop[i]);
-            //     }
-
-            // }
-            //System.out.println("");
             
             arq.seek(p1);
 
@@ -189,7 +164,6 @@ public class Hash {
     }
     
 
-    //CRIAR BUCKETS VAZIOS
     public void createBucketsVazios(int p, int no){
 
         quantMax = no;
@@ -341,12 +315,6 @@ public class Hash {
             
             //Calcular o hash da função
             long pos = funHash(cpf, ( (int) Math.round(Math.pow(2, profundiadeGlobal)) ) );
-
-            // System.out.println("");
-            // System.out.println("profundiadeGlobal = " + profundiadeGlobal);
-            // System.out.println("CPF = " + cpf);
-            // System.out.println("fun = " + ( (int) Math.round(Math.pow(2, profundiadeGlobal)) ));
-            // System.out.println("pos = " + pos);
 
             long posCalculada = 4 + ((pos) * 8);
 
@@ -580,16 +548,8 @@ public class Hash {
                 enderBucket = arq.readLong();
             }
 
-            // System.out.println("pos: "+ pos);
-            // System.out.println("posHashos: "+ posHash);
-
-
-
-
             arq.close();
 
-            
-            
             //Procurar registro no bucket
             if(enderBucket >= 0)
             {   
@@ -605,10 +565,6 @@ public class Hash {
                 quantidade = arq.readInt();
                 enderProxBucket = arq.readLong();
 
-                // System.out.println("profLocal: "+ profLocal);
-                // System.out.println("enderProxBucket: "+ enderProxBucket);
-                // System.out.println("quantidade: "+ quantidade);
-                // System.out.println("profundiadeGlobal: "+ profundiadeGlobal);
                 
                 for(int i = 0; i < quantidade; i++)
                 {
@@ -629,35 +585,7 @@ public class Hash {
                     }
                 }
 
-                // if(!econtrou)
-                // {
-                //     arq.seek(enderProxBucket);
 
-                //     //ler dados
-                //     profLocal = arq.readInt();
-                //     quantidade = arq.readInt();
-                //     enderProxBucket = arq.readLong();
-
-                //     for(int i = 0; i < quantidade; i++)
-                //     {
-                //         bytesAux = new byte[16];
-
-                //         arq.read(bytesAux);
-
-                //         bucket.frontByteArray(bytesAux);
-
-                //         System.out.println("chave: "+ bucket.getChave());
-
-                //         if(bucket.getChave() != -1 && bucket.getChave() == cpf)
-                //         {
-                //             System.out.println("Encontrou");
-                //             enderEncontrado = bucket.getEndereco();
-                //             i = quantidade;
-                //             econtrou = true;
-                //         }
-                //     }
-
-                // }
 
                 arq.close();
             }
@@ -758,47 +686,7 @@ public class Hash {
                         sucesso = true;
                     }
                 }
- 
-                // if(!encontrou)
-                // {
-                //     arq.seek(enderProxBucket);
- 
-                //     //ler dados
-                //     profLocal = arq.readInt();
-                //     quantidade = arq.readInt();
-                //     enderProxBucket = arq.readLong();
- 
-                //     for(int i = 0; i < quantidade; i++)
-                //     {
-                //         bytesAux = new byte[16];
 
-                //         long b1 = arq.getFilePointer();
- 
-                //         arq.read(bytesAux);
- 
-                //         bucket.frontByteArray(bytesAux);
- 
-                //         // System.out.println("chave: "+ bucket.getChave());
- 
-                //         if(bucket.getChave() != -1 && bucket.getChave() == cpf)
-                //         {
-                //             // System.out.println("Encontrou");
-                //             i = quantidade;
-                //             //deletar chave encontrada
-                //             bucket.setChave(-1);
-                //             enderEncontrado = bucket.getEndereco();
-
-                //             //ir para o início do arquivo para salvar o processo
-                //             arq.seek(b1);
-                //             bytes = bucket.toByteArray();
-                //             arq.write(bytes);
-
-                //             sucesso = true;
-                //         }
-                //     }
- 
-                // }
- 
                 arq.close();
             }
  

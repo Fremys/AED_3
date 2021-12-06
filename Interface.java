@@ -115,7 +115,9 @@ public class Interface {
                         
                         //Realizar as inserções desejadas
                         for(int i = 0; i < k; i++){
+
                             System.out.println("inserindo : "+ i);
+
                             long tempoInicial = System.currentTimeMillis();
                             //random.nextInt(999999999)
                             boolean sucesso = models.insertRelatorio(i, nome, "21/02/2002", true, arquivoAdicional, n, tamanhoTotalRegistro);
@@ -156,6 +158,7 @@ public class Interface {
                     for(long i = 0; i < quantidaNecessariaRegistros; i++){
 
                         System.out.println("Inserido: "+i);
+                        
                         long tempoInicial = System.currentTimeMillis();
                         
                         boolean sucesso = models.insertRelatorio(i, nome, "21/02/2002", true, arquivoAdicional, n, tamanhoTotalRegistro);
